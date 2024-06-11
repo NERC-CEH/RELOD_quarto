@@ -1,6 +1,6 @@
 project:
   type: book
-  output-dir: doc
+  output-dir: docs
 
 
 book:
@@ -14,7 +14,6 @@ book:
     - lidar_processing.qmd
     - sentinel1.qmd
     - sh_RS_comparison.qmd
-    - summary.qmd
     - references.qmd
     
 #rmd_files: ["index.Rmd", "gedi_processing.Rmd","gedi_exploration.Rmd","lidar_processing.Rmd","sentinel1.Rmd","sh_RS_comparison.Rmd"]
