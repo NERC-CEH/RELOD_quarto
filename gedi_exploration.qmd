@@ -1,0 +1,670 @@
+---
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# GEDI data exploration
+
+This code goes through the data exploration, plotting and analysis of
+GEDI beams downloaded from the gedi_processing scripts.
+
+GEDI (https://gedi.umd.edu/) is the Global Ecosystem Dynamics
+Investigation satellite that sits aboard the international space
+station, producing high resolution laser imagery of earth. GEDI is
+unique in that it is a satellite LiDAR (Light Detection And Ranging)
+instrument, meaning it is capable of producing 3D imagery of the earth's
+surface, giving the possibility of recording forest metrics such as
+horizontal and vertical canopy structure.
+
+GEDI data is available to download for free. There are multiple
+different levels of processing that can be downloaded for each
+individual beam. As a result, there is a relatively complex data
+hierarchy used to store and access GEDI data that can be confusing at
+first.
+
+## GEDI data products:
+
+More detail on the data type can be found on the GEDI website
+(https://gedi.umd.edu/data/products/), but a brief summary is as
+follows:
+
+-   Level 1A data is not available for download as it is the completely
+    raw waveform.
+-   Level 1B data is the location of each of the waveforms
+-   Level 2B data includes canopy cover fraction, canopy cover profile,
+    leaf area index and leaf area index profile
+-   Level 3 data (not explored here) gives gridded metrics of the level
+    2 data at a 1x1km resolution globally.
+-   Level 4A gives footprint level aboveground biomass. See Dubayah
+    (2022 - doi:10.1088/1748-9326/ac8694)
+-   Level 4B gives a gridded metric of the level 4A data, at a 1x1km
+    resolution globally.
+
+### Interpreting GEDI data:
+
+The GEDI lidar fires *shots* from 8 *beams* on the satellite at regular
+spaced intervals. By the time the *shots* reach earth, they have a 25m
+radius. The reflectance from the shots are collected by the satellite.
+This gives us a 3D imprint of the 25m footprint that the shot has
+reached. As such, we don't get detail about the exact positioning of
+objects on the ground, but rather we get a profile of heights. From this
+it is possible to calculate additional metrics such as the ground level,
+canopy height, complexity etc.
+
+### What is the difference between the beams?
+
+https://forum.earthdata.nasa.gov/viewtopic.php?t=756
+
+Coverage beams: 0000, 0001, 0010, 0011
+
+Full power beam: 0101, 0110, 1000, 1011
+
+GEDI coverage beams (beams 0000, 0001, 0010, and 0011) were designed to
+penetrate canopies of up to 95% canopy cover under “average” conditions.
+For this reason, it is recommended to preference the GEDI full power
+beams in cases of dense vegetation.
+
+Studies have shown that full power beams are more accurate at estimating
+canopy height in tropical forests (Lahssini (2022), and should be used,
+together with quality control for high sensitivity (\>0.98) shots only.
+
+### Processing GEDI data
+
+The H5 structure of the GEDI data mean that they are not always simple
+to access and navigate through. The *rGEDI* package was developed to
+process Level 1 and 2 data
+(https://github.com/carlos-alberto-silva/rGEDI). This package can be
+useful for an introduction to how to navigate through the files and what
+you can access from them. However, this package is not flexible: it
+fails to open and navigate through the h5 files if you have a GEDI beam
+that had one or more lasers turned off during the flight. The figures it
+produces are not valid if you have any shots missing.
+
+### This script:
+
+This script opens GEDI beam data from April 2019 to May 2022 and goes
+through manipulating and using this data. It then compares the GEDI
+footprint data to the drone collected small footprint lidar pass from
+Knepp estate in 2021.
+
+### ISSUES:
+
+-   2b plots assume beams are sequential with 60m distances between
+    them: this is not the case as they are sampled from different time
+    periods so this distance should be derived from the coordinates
+    rather than a standard 60m
+-   Missing beams affects use of rGEDI download, opening h5 files and as
+    a result the use of all other functions in rGEDI - Why are some
+    beams missing? I think because at various times some beams are
+    turned off for maintenance
+-   Need to check: currently from the 1b data all we have is the
+    location and shot number, want ideally to be able to carry out the
+    quality control on the data at this level and then only pull through
+    the ones we want in 2a/2b etc.
+-   Quality flagging of data for the 2b plots
+-   TODO: make sure all quality control is carried out in the data
+    processing file before we get here, so the files are all clean and
+    ready to use
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  warning = FALSE, 
+  message  = FALSE,
+  fig.width = 6
+)
+
+rm(list=ls())
+
+```
+
+```{r}
+
+# packages
+# rGEDI requires hdf5r package, which requires the HDF5 Linux library. Run `sudo apt update` and then `sudo apt-get install libhdf5-dev` in the terminal for Linux or Mac
+
+#library(devtools)
+#devtools::install_git("https://github.com/carlos-alberto-silva/rGEDI", dependencies = TRUE)
+#devtools::install_github("VangiElia/GEDI4R")
+ 
+
+library(rGEDI) # for processing gedi data
+library(GEDI4R)
+# need to do like an , if not here install this package
+library(terra) # for processing rasters
+library(leaflet) # for producing plots with the ESRI baselayers
+library(leafsync)# 
+library(rasterVis) #
+library(viridis) # colour palettes
+library(htmltools)
+library(here) # relative filepaths
+library(tidyverse) # data wrangling
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(ggpubr) # grouping ggplots
+library(mapview) # plotting maps
+library(knitr)
+library(mapview) # follow this to work on DataLabs (PhantomJS): https://gist.github.com/julionc/7476620
+library(webshot)
+
+theme_set(theme_classic())
+
+# creating a world map for plotting
+world <- ne_countries(scale="medium", returnclass="sf")
+world <- sf::st_as_sf(world, coords=c("x","y"), crs = 27700, agr = "constant", remove = F)
+
+# outline of Knepp:
+
+#-0.376, -0.362, 50.97, 50.98
+#-0.3764441, -0.363777, 50.97191, 50.98188 
+#v <- vect("POLYGON ((-0.376 50.97 , -0.376 50.98, -0.362 50.98,  -0.362 50.97))")
+
+#v_mask <- vect(here("data-raw", "knepp_rwild.shp"))
+#v <- vect(here("datasets/KneppWildVeg", "rewildedfields.shp"))
+#v <- terra::project(v, "EPSG:4326")
+
+v_mask <- vect(here("data-raw", "knepp_mask", "knepp_mask.shp"))
+v_mask <- terra::project(v_mask, "epsg:4326")#  "+proj=longlat +datum=WGS84"
+
+# shape files of the shots:
+sp_1b <- terra::vect(here("data-output/gedi/", "g1b_full.shp"))
+sp_2a <- terra::vect(here("data-output/gedi/", "g2a_full.shp"))
+sp_2b <- terra::vect(here("data-output/gedi/", "g2b_full.shp"))
+
+# dataframes of the shot data:
+# be sure to read in the shot number as a character at this point otherwise it will default to numeric and cut off the end of the value
+
+df_1b_wave <- read.csv(here("data-output/gedi/", "g1b_wave_dat.csv"),
+                       row.names = 1, colClasses=c("shot_number" = "character"))
+df_1b_shot <- read.csv(here("data-output/gedi/", "g1b_shot_dat.csv"), 
+                       row.names = 1, colClasses=c("shot_number" = "character"))
+
+df_1b_shot$date <- as.Date(df_1b_shot$date)
+df_1b_shot <- df_1b_shot[df_1b_shot$date > as.Date("2021-05-01"),]
+df_1b_shot <- df_1b_shot[df_1b_shot$date < as.Date("2022-05-01"),]
+
+df_1b_wave <- df_1b_wave[df_1b_wave$shot_number %in% df_1b_shot$shot_number,]
+
+#df_2a <- read.csv(here("data-output/gedi/", "g2a_full.csv"), 
+#                  row.names = 1, colClasses = c("shot_number" = "character"))
+#df_2b <- as.data.frame(vect(here("data-output/gedi/", "g2b_QC.shp")))
+                       
+### turn them into osgb from lat long: easier to interpret as metres
+crs(sp_2a) <- "epsg:4326"
+sp_2a <- terra::mask(sp_2a, v_mask)
+sp_2a <- terra::project(sp_2a, "EPSG:27700")
+
+crs(sp_2b) <- "epsg:4326"
+sp_2b <- terra::mask(sp_2b, v_mask)
+sp_2b <- terra::project(sp_2b, "EPSG:27700")
+
+df_2a <- as.data.frame(sp_2a, geom= "XY")
+df_2b <- as.data.frame(sp_2b, geom = "XY")
+
+names(df_2a)[1:9] <- c("beam", "shot_number", "degrade_flag","quality_flag",
+                       "delta_time", "sensitivity", "solar_elevation", "elev_highestmode",
+                       "elev_lowestmode")
+names(df_2b) <- c("beam", "shot_number", "algorithm", "l2b_quality","delta_time", 
+                  "elev_highestmode", "elev_lowestmode", "height_last", "height_bin",
+                  "cover", "pai", "omega", "fhd_normal", 
+                  paste0("pai_z", seq(0,145, by = 5), "_",seq(0,145, by = 5)+5),
+                  paste0("pavd_z", seq(0,145, by = 5), "_",seq(0,145, by = 5)+5),
+                  "x", "y")
+
+
+# creating a dataframe as a lookup table for the different beams
+beam <- c("BEAM0000", "BEAM0001", "BEAM0010", "BEAM0011",
+          "BEAM0101", "BEAM0110", "BEAM1000", "BEAM1011")
+
+v_coverage <- c(rep("coverage", 4), rep("full", 4))
+df_beams <- as.data.frame(cbind(beam, v_coverage))
+
+#shp_4a <- terra::vect("GEDI/g4A_all.shp")
+```
+
+## Level 1B
+
+Processing information in python:
+https://lpdaac.usgs.gov/resources/e-learning/getting-started-gedi-l1b-version-2-data-python/
+
+User manual:
+https://lpdaac.usgs.gov/documents/987/GEDI01B_User_Guide_V2.pdf
+
+Data dictionary:
+https://lpdaac.usgs.gov/documents/981/gedi_l1b_dictionary_P003_v2.html
+
+The level 1B data gives us the waveform information from each shot. This
+data format is useful if you want to derive your own metrics from the
+waveform, or extract specific information from the vertical height
+profile.
+
+I think that because this is the rawest form data you can download, it
+doesn't have the same quality control metrics that you find in the level
+2 products. The idea being that if you wanted to, you could design your
+own quality flag from the data rather than interpreting it from this.
+
+```{r, 1b, fig.width = 4, fig.height=3}
+
+# plotting an individual waveform:
+df_shot1 <- df_1b_wave[df_1b_wave$shot_number == df_1b_wave$shot_number[1],]
+
+ggplot(df_shot1, aes(x= elevation, y = rxwaveform)) +
+  geom_line(colour= "red") +
+  theme(legend.position = "none") +
+  ggtitle("Single shot waveform")
+
+
+dim(df_shot1)
+# we get 759 returns from one single shot showing the relative elevation
+
+```
+
+## Level 2A
+
+Processing:
+https://lpdaac.usgs.gov/resources/e-learning/getting-started-gedi-l2a-version-2-data-python/
+
+Details: https://lpdaac.usgs.gov/products/gedi02_bv002/
+
+User guide:
+https://lpdaac.usgs.gov/documents/998/GEDI02_UserGuide_V21.pdf
+
+This is the level 1B waveform grouped into bins of relative height at a
+1% interval.
+
+Here we can use the relative height bins, together with the ground
+elevation (elev_lowestmode) to construct a canopy height model and a
+digital elevation model.
+
+### Interpreting RH values:
+
+Question: why are there negative values in the rh??
+https://lpdaac.usgs.gov/documents/986/GEDI02_UserGuide_V2.pdf
+
+"Relative Height is calculated by the following equation:
+elev_highestreturn - elev_lowestmode. The lower RH metrics (e.g., RH10)
+will often have negative values, particularly in low canopy cover
+conditions. This is because a relatively high fraction of the waveform
+energy is from the ground and below elev_lowestmode. For example, if the
+ground return contains 30% of the energy, then RH1 through 15 are likely
+to be below 0 since half of the ground energy from the ground return is
+below the center of the ground return, which is used to determine the
+mean ground elevation in the footprint (elev_lowestmode). The RH metrics
+are intended for vegetated surfaces. Results over bare/water surfaces
+are still valid but may present some confusing results. See Section 6 of
+the Level 2 User Guide for more detailed information."
+
+```{r, fig.width=10}
+# Quality control:
+# want quality flag to be 1
+# degrade flag < 1
+# sensitivity over 0.95
+# best to use data collected at night (solar_elevation <0)
+# also want to use data that has a quality flag of 1
+
+df_2a <- df_2a[df_2a$quality_flag ==1,]
+df_2a <- df_2a[df_2a$degrade_flag < 1,]
+df_2a <- df_2a[df_2a$sensitivity > 0.9, ] #sufficient for over land
+df_2a <- df_2a[df_2a$shot_number %in% df_1b_shot$shot_number,]
+#df_2a <- df_2a[df_2a$sensitivity > 0.95, ] #better for some conditions e.g. dense forest
+
+a <- ggplot(df_2a, aes(x= x, y = rh100)) +
+  geom_point(alpha= 0.2)  +
+  geom_line(alpha = 0.2) +
+  theme(legend.position = "none") +
+  ylab("Relative elevation (m)") +
+  xlab("Distance along transect (m)") +
+  scale_x_continuous(labels=c(0, 200, 400, 600, 800)) +
+  ggtitle("Canopy height model")
+
+b <- ggplot(df_2a, aes(x= x, y = elev_lowestmode)) +
+  geom_point(alpha= 0.2)  +
+  geom_line(alpha = 0.2) +
+  theme(legend.position = "none") +
+  ylab("Relative elevation (m)") +
+  xlab("Distance along transect (m)") +
+  scale_x_continuous(labels=c(0, 200, 400, 600, 800)) +
+  ggtitle("Digital elevation model")
+
+ggarrange(a,b, ncol=2)
+
+# this is the digital elevation model
+df_2al <- df_2a %>% gather(class, rel_height, grep("rh", names(df_2a)))
+df_2al$absolute_height <- df_2al$elev_lowestmode + df_2al$rel_height
+df_2al <- df_2al[df_2al$rel_height >0,]
+df_2a$max_height <- df_2a$rh100 + df_2a$elev_lowestmode
+df_2al <- left_join(df_2al, df_2a[,c("shot_number", "max_height")], by= "shot_number")
+
+a <- ggplot(df_2al, aes(x= x, y = rel_height)) +
+  geom_point(alpha= 0.2, size = 1, col= "darkgreen") +
+  ylab("Relative elevation (m)") +
+  xlab("Distance along transect (m)") +
+  theme(legend.position = "none") +
+  scale_x_continuous(labels=c(0, 200, 400, 600, 800))
+
+b <- ggplot() +
+  geom_point(data = df_2al, aes(x= x, y = absolute_height),alpha= 0.2, size = 1, col= "darkgreen") +
+  geom_line(data = df_2al, aes(x = x, y = elev_lowestmode), colour = "red", alpha = 0.4) +
+  geom_line(data = df_2al, aes(x = x, y = max_height), colour = "black", alpha = 0.4) +
+  ylab("Height (m)") +
+  xlab("Distance along transect (m)") +
+  theme(legend.position = "none") +
+  scale_x_continuous(labels=c(0, 200, 400, 600, 800))
+
+ggarrange(a,b, ncol = 2)
+#if(FALSE){
+#rh100metrics<-gridStatsLevel2AM(level2AM = level2AM, func=mySetOfMetrics(rh100), res=0.005)
+
+# View maps
+
+#rh100maps<-levelplot(rh100metrics,
+#                     layout=c(1, 4),
+#                     margin=FALSE,
+#                     xlab = "Longitude (degree)", ylab = "Latitude (degree)",
+#                     colorkey=list(
+#                       space='right',
+#                       labels=list(at=seq(0, 18, 2), font=4),
+#                       axis.line=list(col='black'),
+#                       width=1),
+#                     par.settings=list(
+#                       strip.border=list(col='gray'),
+#                       strip.background=list(col='gray'),
+#                       axis.line=list(col='gray')
+#                     ),
+#                     scales=list(draw=TRUE),
+#                     col.regions=viridis,
+#                     at=seq(0, 18, len=101),
+#                     names.attr=c("rh100 min","rh100 max","rh100 mean", "rh100 sd"))
+#}
+```
+
+```{r}
+
+sp_2a <- terra::project(sp_2a, "epsg:27700")
+
+sp_2a <- sp_2a[sp_2a$quality_fl ==1,]
+sp_2a <- sp_2a[sp_2a$degrade_fl < 1,]
+sp_2a <- sp_2a[sp_2a$sensitivit > 0.9, ]
+
+sp_2a <- buffer(sp_2a, 12.5) # adding on the radius of the beam for each shot
+
+#mapshot(
+  leaflet(sf::st_as_sf(v_mask)) %>%
+  addTiles() %>%
+  addPolygons( fillOpacity=0.1) %>%
+  addPolygons(data=sf::st_as_sf(sp_2a),
+              color = "red") %>%
+  addProviderTiles(providers$Esri.WorldImagery) %>%
+  addScaleBar(options = list(imperial = FALSE))#, 
+  #file = here("data-output", "figures", "knepp_beams.png" ))
+
+#include_graphics(here("data-output", "figures", "knepp_beams.png"))
+
+# see https://lpdaac.usgs.gov/resources/e-learning/getting-started-gedi-l1b-version-2-data-python/
+# for plotting out sets of waveforms together
+
+```
+
+Then also the issue with the geolocation problem means that the beams
+are not exact: rather there is a +/-10m geolocation error for each of
+the points. That means it could fall within a further 10m:
+
+```{r}
+
+sp_2a_err <- buffer(sp_2a, 10) # adding on another 10m to show the extent of the error
+
+#mapshot(
+  leaflet(sf::st_as_sf(v_mask)) %>%
+  addTiles() %>%
+  addPolygons( fillOpacity=0.1) %>%
+  addPolygons(data=sf::st_as_sf(sp_2a_err),
+              color = "red") %>%
+  addProviderTiles(providers$Esri.WorldImagery) %>%
+  addScaleBar(options = list(imperial = FALSE))#, 
+ # file = here("data-output", "figures", "knepp_beams_10m_error.png")
+#)
+
+#include_graphics(here("data-output", "figures", "knepp_beams_10m_error.png"))
+
+```
+
+## Level 2b:
+
+The level 2b data provides metrics calculated from earlier levels,
+namely plant area volume density, foliage height index, % cover and
+foliage clumping factor.Thes values are calculated in 5m increments
+rather than the percentile grouping used for the relative height
+profile. data
+
+Processing:
+https://lpdaac.usgs.gov/resources/e-learning/getting-started-gedi-l2b-version-2-data-python/
+
+Details: https://lpdaac.usgs.gov/products/gedi02_bv002/
+
+User guide:
+https://lpdaac.usgs.gov/documents/998/GEDI02_UserGuide_V21.pdf
+
+### Description of the canopy cover and vertical profile metrics:
+
+https://lpdaac.usgs.gov/documents/588/GEDI_FCCVPM_ATBD_v1.0.pdf
+
+-   Plant area index (PAI):
+
+Leaf Area Index (LAI) is one half of the total leaf area per unit ground
+surface. Closely linked to canopy cover through the gap distribution
+within the canopy. Plant Area Index (PAI) is closely related but
+incorporates all canopy structural elements (e.g. branch and trunk) in
+addition to leaves. The difference between PAI and LAI is often small in
+dense broadleaf forests (Tang 2012). The vertical profile is the
+vertical variation of PAI/LAI, which is closely related to
+foliage-height profiles. It is similar to a 3D canopy structure and can
+be used to describe growth patterns of forests at different successional
+stages (Parker 2004).
+
+-   Plant area volume density (pavd):
+
+This is the vertical plant area volume density profile - the foliage
+profile: assuming a random distribution of canopy elements and constant
+leaf angle with height.
+
+-   Foliage height index (fhd):
+
+FHD measures complexirty of the canopy structure - also known as
+Shannon's diversity index. High FHD values indicate high complexity.
+
+-   \% Cover (cover):
+
+This is the percentage of the ground covered by the vertical projection
+of canopy material (i.e. leaves, branches and stems only)
+
+-   Canopy cover profile (cover_z):
+
+The horizontally- intercepted canopy elements at a given height
+(indicating that there is canopy cover there that will not be identified
+because it can't be intercepted horizontally)
+
+-   Foliage clumping factor: (omega)
+
+Between 0 and 1, the ratio of Pgap fora clumped canopy and Pgp for a
+random canopy of the same LAI. (Pgap = directional gap probability)
+
+What we want to do:
+
+-   identify the different strata within the beam e.g. identify where
+    the understory is and extract the PAI and PAVD for this, separate to
+    the canopy.
+
+```{r}
+# preparing the pai and pavd dataframes:
+
+df_2b <- df_2b[df_2b$algorithmrun_flag == 1,]
+df_2b <- df_2b[df_2b$l2b_quality_flag == 1,]
+
+df_pai <- df_2b[,-grep("pavd", names(df_2b))]
+df_pai <- df_pai %>% gather(pai, value, grep("pai_", names(df_pai)))
+df_pai <- df_pai[!(df_pai$value ==-9999),]
+df_pai <- df_pai[!(df_pai$value ==0),]
+df_pai$pai_start <- parse_number(df_pai$pai)
+df_pai$rel_m <- df_pai$pai_start + 2.5
+df_pai$abs_m <- df_pai$rel_m + df_pai$elev_lowestmode
+
+df_pavd <- df_2b[,-grep("pai", names(df_2b))]
+df_pavd <- df_pavd %>% gather(pavd, value, grep("pavd", names(df_pavd)))
+df_pavd <- df_pavd[!(df_pavd$value ==-9999),]
+df_pavd <- df_pavd[!(df_pavd$value ==0),]
+df_pavd$pavd_start <- parse_number(df_pavd$pavd)
+df_pavd$rel_m <- df_pavd$pavd_start + 2.5
+df_pavd$abs_m <- df_pavd$rel_m + df_pavd$elev_lowestmode
+
+```
+
+### plotPAIProfile:
+
+adapted here as i have downloaded the data in a different fashion to the
+way developed in rGEDI due to not all beams being on at all times
+
+```{r eval=FALSE, include=FALSE}
+#has errors
+
+# making a lookup table for the shot numbers
+v_sn <- unique(as.character(levels(as.factor(df_pai$shot_number))))
+v_id <- 1:length(v_sn)
+df_sn <- as.data.frame(cbind(v_sn, v_id))
+names(df_sn) <- c("shot_number", "id") 
+df_pai <- left_join(df_pai, df_sn, by = "shot_number")
+
+v_heights <- unique(as.numeric(levels(as.factor(df_pai$rel_m))))
+r <- rast(ext(v_mask), res = 25, crs=crs(v_mask))
+
+x <- v_heights[1]
+r_pai <- lapply(v_heights, FUN = function(x){
+
+  df <- df_pai[df_pai$rel_m == x,]  
+  vectr <- vect(df[,c("x", "y", "value")], geom = c("x", "y"), crs = "EPSG:27700")
+  r <- rasterize(vectr, r, "value")
+  names(r) <- paste0("relm_", x)
+  return(r)
+})
+r <- rast(r_pai)
+
+plot(r)
+
+```
+
+## pavd
+
+vertical step size of plant area volume density is 5m PADV includes 30
+steps in each shot describing the PAVD at height = step n to represent
+the PADV and the height elevation in the same figure, need to create a
+new height column
+
+```{r eval=FALSE, include=FALSE}
+#has errors
+
+v_sn <- unique(as.character(levels(as.factor(df_pavd$shot_number))))
+v_id <- 1:length(v_sn)
+df_sn <- as.data.frame(cbind(v_sn, v_id))
+names(df_sn) <- c("shot_number", "id")
+df_pavd <- left_join(df_pavd, df_sn, by = "shot_number")
+v_heights <- unique(as.numeric(levels(as.factor(df_pavd$rel_m))))
+r <- rast(ext(v_mask), res = 25, crs = crs(v_mask))
+
+r_pavd <- lapply(v_heights, FUN = function(x){
+
+  df <- df_pavd[df_pavd$rel_m == x,]  
+  vectr <- vect(df[,c("x", "y", "value")], geom = c("x", "y"), crs = "EPSG:27700")
+  r <- rasterize(vectr, r, "value")
+  names(r) <- paste0("relm_", x)
+  return(r)
+})
+r <- rast(r_pavd)
+
+plot(r)
+
+```
+
+```{r eval=FALSE, include=FALSE}
+# has errors
+a <- ggplot(world) +
+  coord_sf(xlim=c(514000, 515000), ylim=c(120500,121500)) +
+  geom_point(data = df_2b, aes(x=x, y=y, colour = cover)) +
+  ggtitle("Proportion vegetation cover")
+
+b <- ggplot(world) +
+  coord_sf(xlim=c(514000, 515000), ylim=c(120500,121500)) +
+  geom_point(data = df_2b, aes(x=x, y=y, colour = pai)) +
+  ggtitle("Plant area index")
+  
+c <- ggplot(world) +
+  coord_sf(xlim=c(514000, 515000), ylim=c(120500,121500)) +
+  geom_point(data = df_2b, aes(x=x, y=y, colour = fhd_normal)) +
+  ggtitle("Foliage Height diversity")
+
+
+ggarrange(a,b,c, ncol = 3)
+
+```
+
+## 4a data:
+
+```{r eval=FALSE, include=FALSE}
+
+df_4a_full <- read.csv( here("data-output","gedi", "4a_gedi_knepp.csv"))
+vect_4a_full <- vect(df_4a_full, geom = c("lon_lowestmode", "lat_lowestmode"), crs = "EPSG:4326")
+
+df_4a <- df_4a_full[df_4a_full$l4_quality_flag == 1,]
+#df_4a <- df_4a[df_4a$l2_quality_flag == 1,]
+df_4a <- df_4a[df_4a$algorithm_run_flag == 1,]
+df_4a <- df_4a[df_4a$sensitivity > 0.9,]
+
+vect_4a <- vect(df_4a, geom = c("lon_lowestmode", "lat_lowestmode"), crs = "EPSG:4326")
+vect_4a <- terra::project(vect_4a, "EPSG:27700")
+#vect_4a <- terra::mask(vect_4a, v_mask)
+
+plot(vect_4a)
+plot(v_mask, add = TRUE)
+
+```
+
+```{r eval=FALSE, include=FALSE}
+
+df_4a <- as.data.frame(vect_4a, geom= "XY")
+
+a <- ggplot(world) +
+  coord_sf(xlim=c(514000, 515000), ylim=c(120500,121500)) +
+  geom_point(data = df_4a, aes(x=x, y=y, colour = tree_cover)) 
+
+b <- ggplot(world) +
+  coord_sf(xlim=c(514000, 515000), ylim=c(120500,121500)) +
+  geom_point(data = df_4a, aes(x=x, y=y, colour = pft_class)) 
+
+c <- ggplot(world) +
+  coord_sf(xlim=c(514000, 515000), ylim=c(120500,121500)) +
+  geom_point(data = df_4a, aes(x=x, y=y, colour = agbd)) 
+
+ggarrange(a,b,c, ncol = 3)
+
+```
+
+### Extracting usable metrics from GEDI data:
+
+Due to the error in geolocation in the GEDI data, it isn't possible to
+directly compare GEDI footprint data to ground truthed vegetation plots.
+As such, we will compare the GEDI footprint beams to a large footprint
+proxy derived from the drone lidar data. In this case, we are using the
+drone lidar as the highly accurate comparison and the GEDI data will be
+compared to this. We will assess how closely the large footprint GEDI
+beams correlate with the lidar derived large footprints for:
+
+-   maximum height
+
+-   an understory complexity value
+
+-   variation within the beam (foliage height diversity)
+
+-   canopy cover fraction
+
+-   plant area index

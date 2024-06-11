@@ -1,0 +1,28 @@
+project:
+  type: book
+
+book:
+  title: "RELOD ebook"
+  author: "Beth Raine"
+  date: "6/10/2024"
+  chapters:
+    - index.qmd
+    - gedi_processing.qmd
+    - gedi_exploration.qmd
+    - lidar_processing.qmd
+    - sentinel1.qmd
+    - sh_RS_comparison.qmd
+    - summary.qmd
+    - references.qmd
+    
+#rmd_files: ["index.Rmd", "gedi_processing.Rmd","gedi_exploration.Rmd","lidar_processing.Rmd","sentinel1.Rmd","sh_RS_comparison.Rmd"]
+bibliography: references.bib
+
+format:
+  html:
+    theme: cosmo
+  pdf:
+    documentclass: scrreprt
+
+editor: visual
+

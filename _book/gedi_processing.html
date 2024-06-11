@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.553">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>RELOD ebook - 1&nbsp; GEDI data processing</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./gedi_exploration.html" rel="next">
+<link href="./index.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./gedi_processing.html"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">GEDI data processing</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">RELOD ebook</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gedi_processing.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">GEDI data processing</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gedi_exploration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">GEDI data exploration</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./sentinel1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Sentinel 1 SAR time-lapse image</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./sh_RS_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Strawberry Hill analysis</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./summary.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Summary</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#how-to-access-gedi" id="toc-how-to-access-gedi" class="nav-link active" data-scroll-target="#how-to-access-gedi"><span class="header-section-number">1.1</span> How to access GEDI:</a>
+  <ul class="collapse">
+  <li><a href="#h5-file-structures" id="toc-h5-file-structures" class="nav-link" data-scroll-target="#h5-file-structures"><span class="header-section-number">1.1.1</span> h5 file structures:</a></li>
+  <li><a href="#packages-for-gedi-in-r" id="toc-packages-for-gedi-in-r" class="nav-link" data-scroll-target="#packages-for-gedi-in-r"><span class="header-section-number">1.1.2</span> Packages for GEDI in R:</a></li>
+  </ul></li>
+  <li><a href="#identifying-files-for-download" id="toc-identifying-files-for-download" class="nav-link" data-scroll-target="#identifying-files-for-download"><span class="header-section-number">1.2</span> Identifying files for download</a></li>
+  <li><a href="#using-gedi-data-in-datalabs" id="toc-using-gedi-data-in-datalabs" class="nav-link" data-scroll-target="#using-gedi-data-in-datalabs"><span class="header-section-number">1.3</span> Using gedi data in datalabs:</a></li>
+  <li><a href="#level-1b-data" id="toc-level-1b-data" class="nav-link" data-scroll-target="#level-1b-data"><span class="header-section-number">1.4</span> Level 1B data:</a></li>
+  <li><a href="#level-2a" id="toc-level-2a" class="nav-link" data-scroll-target="#level-2a"><span class="header-section-number">1.5</span> Level 2A</a></li>
+  <li><a href="#level-2b" id="toc-level-2b" class="nav-link" data-scroll-target="#level-2b"><span class="header-section-number">1.6</span> Level 2B:</a></li>
+  <li><a href="#level-4" id="toc-level-4" class="nav-link" data-scroll-target="#level-4"><span class="header-section-number">1.7</span> Level 4:</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">GEDI data processing</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This R script details how to download and pre-process GEDI data to get it into a useable form.</p>
+<section id="how-to-access-gedi" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="how-to-access-gedi"><span class="header-section-number">1.1</span> How to access GEDI:</h2>
+<p>GEDI data can be downloaded from Nasa’s Earthdata platform directly: <a href="https://search.earthdata.nasa.gov/search" class="uri">https://search.earthdata.nasa.gov/search</a></p>
+<p>On this platform you can specify the coordinates of your site of interest and download the GEDI passes that cover this particular region.</p>
+<p>For GEDI 1B and 2B, when using NASA earthdata directly, you can crop the beam path to only download the section of interest, which saves a lot of space. However this functionality doesn’t seem to (yet) be available for the more recently released 4A datasets. In this code below, I have separately downloaded 1B and 2B data from the Earthdata platform, zipped the file including all beam passes and uploaded this to the minio platform. The first step is then to unzip these files.</p>
+<p>GEDI quick guide for how to download data directly from the Earthdata portal: <a href="https://lpdaac.usgs.gov/documents/635/GEDI_Quick_Guide.pdf" class="uri">https://lpdaac.usgs.gov/documents/635/GEDI_Quick_Guide.pdf</a></p>
+<p>You can also download GEDI data through R using <em>rGEDI</em> (see below for explanation) and specifying the coordinates of your bounding box. However from my experience this will download the entire beam pass rather than the cropped region of interest, which generates very large files. I reccomend downloading data from earth data yourself using the crop function rather than using the download method included in rGEDI as this downloads the entire files which are huge (!) rather than just the cropped area.</p>
+<section id="h5-file-structures" class="level3" data-number="1.1.1">
+<h3 data-number="1.1.1" class="anchored" data-anchor-id="h5-file-structures"><span class="header-section-number">1.1.1</span> h5 file structures:</h3>
+<p>GEDI data is downloaded in h5 file types. This is a Hierarchical data format that allows the storage of multidimensional arrays of data. As we are dealing with a separate dataset for every shot from GEDI, this makes it far easier to store such a large amount of data, however it is a little complicated to interact with if you are not familiar with this data format.</p>
+</section>
+<section id="packages-for-gedi-in-r" class="level3" data-number="1.1.2">
+<h3 data-number="1.1.2" class="anchored" data-anchor-id="packages-for-gedi-in-r"><span class="header-section-number">1.1.2</span> Packages for GEDI in R:</h3>
+<p>GEDI 1B, 2A and 2B data can be processed in R using <em>rGEDI</em>. The H5 structure of the GEDI data mean that they are not always simple to access and navigate through. The <em>rGEDI</em> package was developed to process Level 1 and 2 data (https://github.com/carlos-alberto-silva/rGEDI). This package can be useful for an introduction to how to navigate through the files and what you can access from them. However, this package is not flexible: it fails to open and navigate through the h5 files if you have a GEDI beam that had one or more lasers turned off during the flight. The <em>GEDI4R</em> package (<a href="https://github.com/VangiElia/GEDI4R" class="uri">https://github.com/VangiElia/GEDI4R</a>, <a href="https://link.springer.com/article/10.1007/s12145-022-00915-3" class="uri">https://link.springer.com/article/10.1007/s12145-022-00915-3</a>), complements the <em>rGEDI</em> package, has been developed to process level 4A data.</p>
+<p>The code below assumes you have already downloaded the GEDI data for your region of interest from the Earthdata platform. In this example, we use the region of the Knepp estate in Sussex as an example. The code goes through the process of accessing the h5 datasets, pulling out the data for the region of interest and converting this into a more readily usable dataframe and shapefile format.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#To install gedi download and processing packages:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># devtools::install_git("https://github.com/carlos-alberto-silva/rGEDI", dependencies = TRUE)</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># devtools::install_github("VangiElia/GEDI4R")</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rGEDI)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(hdf5r)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(terra)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(GEDI4R)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co">#library(rgdal)</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(raster)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(hdf5r)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(<span class="at">list=</span><span class="fu">ls</span>())</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># bounding box of region</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># SW : 50.95,-0.399</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># NE : 50.99,-0.354</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co"># get shapefile for project area:</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>s <span class="ot">&lt;-</span> <span class="fu">vect</span>(<span class="fu">here</span>(<span class="st">"data-raw"</span>, <span class="st">"knepp_mask"</span>, <span class="st">"knepp_mask.shp"</span>))</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>s <span class="ot">&lt;-</span> terra<span class="sc">::</span><span class="fu">project</span>(s, <span class="st">"EPSG: 4326"</span>)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>s <span class="ot">&lt;-</span> <span class="fu">fillHoles</span>(s)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="identifying-files-for-download" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="identifying-files-for-download"><span class="header-section-number">1.2</span> Identifying files for download</h2>
+<p>This can also be done on the Earthdata Nasa portal, which is better. It actually can crop to an area of interest. Here is the code of how it should be done using the rGEDI package, which I couldn’t get to work.</p>
+<p>GEDI naming conventions:</p>
+<p>GEDI01_B_2019110110221_O01997_03_T03335_02_005_01_V002.h5 indicates:</p>
+<p>GEDI01_B = Product Short Name</p>
+<p>2019110 = Julian Date of Acquisition in YYYYDDD</p>
+<p>110221 = Hours, Minutes, and Seconds of Acquisition (HHMMSS)</p>
+<p>O01997 = O = Orbit, 01997 = Orbit Number</p>
+<p>03 = Sub-Orbit Granule Number</p>
+<p>T03335 = T = Track, 033335 = Track Number</p>
+<p>02 = Positioning and Pointing Determination System (PPDS) type (00 is predict, 01 rapid, 02 and higher is final)</p>
+<p>005 = PGEVersion = SDPS Release Number</p>
+<p>01 = Granule Production Version</p>
+<p>V002 = Version Number</p>
+<p>.h5 = Data Format</p>
+</section>
+<section id="using-gedi-data-in-datalabs" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="using-gedi-data-in-datalabs"><span class="header-section-number">1.3</span> Using gedi data in datalabs:</h2>
+<p>Need to put gedi data int the minio data store and then unzip gedi data downloaded from earth data:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">##############################</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># I cant get this rGEDI code to download just beams that fall within the bounding box area to work:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Study area boundary box coordinates</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">#lr_lon &lt;- ext(s)$xmin </span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">#lr_lat &lt;- ext(s)$ymin</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co">#ul_lon &lt;- ext(s)$xmax</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co">#ul_lat &lt;- ext(s)$ymax</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Specifying the date range</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co">#daterange=c("2021-01-01","2022-07-22")</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Get path to GEDI data</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co">#gLevel1B&lt;-gedifinder(product="GEDI01_B",ul_lat, ul_lon, lr_lat, lr_lon,version="002",daterange=daterange)</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co">#gLevel2A&lt;-gedifinder(product="GEDI02_A",ul_lat, ul_lon, lr_lat, lr_lon,version="002",daterange=daterange)</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="co">#gLevel2B&lt;-gedifinder(product="GEDI02_B",ul_lat, ul_lon, lr_lat, lr_lon,version="002",daterange=daterange)</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># returns thousands of beams which can't be right</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="level-1b-data" class="level2" data-number="1.4">
+<h2 data-number="1.4" class="anchored" data-anchor-id="level-1b-data"><span class="header-section-number">1.4</span> Level 1B data:</h2>
+<p>Level 1B GEDI data is the rawest form of data you can download. This includes the raw waveform data. This data level is good to download if you want to process it yourself and derive metrics that are not available in the more processed forms (Level2,3, or 4).</p>
+<p>User guide: https://lpdaac.usgs.gov/documents/590/GEDIL01_User_Guide_V1.pdf</p>
+<p>#Steps to access level 1B GEDI h5 files, extract required information and save into a dataframe / shapefile are laid out below:</p>
+<p>#zipF&lt;- file.choose(“data-raw/knepp_mask.zip”) # lets you choose a file and save its file path in R (at least for windows) #outDir&lt;-“data-raw/gedi/rewild4a” # Define the folder where the zip file should be unzipped to #unzip(zipF,exdir=outDir)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">####</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># unzip GEDI 1B: this stage is only useful if you are working on datalabs and have had to add your GEDI data to the minio data platform as a zip file.</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># zipF&lt;- file.choose("path") # lets you choose a file and save its file path in R (at least for windows)</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># outDir&lt;-"set the path" # Define the folder where the zip file should be unzipped to </span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># unzip(zipF,exdir=outDir) </span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>beams <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"BEAM0000"</span>, <span class="st">"BEAM0101"</span>, <span class="st">"BEAM1000"</span>, <span class="st">"BEAM0010"</span>, </span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>           <span class="st">"BEAM0011"</span>, <span class="st">"BEAM0110"</span>, <span class="st">"BEAM0001"</span>, <span class="st">"BEAM1011"</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>f_1b <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">"data-raw"</span>, <span class="st">"gedi"</span>, <span class="st">"rewild1b"</span>))</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># navigate through the h5 files using the following terminology:</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co">#gedi_file &lt;- list.files(here("data-raw", "gedi" "rewild1b_01",f_1b[i]))</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co">#file &lt;- paste0(f_1b[i], "/",gedi_file)</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">#gedilevel1b &lt;- readLevel1B(level1Bpath = here("data-raw/gedi/knepp1b_01", file))</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co">#level1b &lt;- gedilevel1b@h5</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">#level1b[[paste0("BEAM0010/stale_return_flag")]][]</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="do">## this is a function to extract variables of interest from the h5 file. It is </span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co"># adapted from the rGEDI package, which doesn't take into account that some </span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co"># beams will not include data, and errors when you direclty apply it. </span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Here i have adapted this function to extract variables of interest, stale return</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co"># flag, elevatin_bin0, elevation_lastbin etc.</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>getLevel1BWF <span class="ot">&lt;-</span> <span class="cf">function</span> (level1b, v_sn) {</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>  waveform <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="at">ncol =</span> <span class="dv">5</span>, <span class="at">nrow=</span> <span class="dv">0</span>))</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(waveform) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"rxwaveform"</span>, <span class="st">"elevation"</span>, <span class="st">"shot_number"</span>, <span class="st">"beam"</span>, <span class="st">"relwave"</span>)</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>  level1b <span class="ot">&lt;-</span> level1b<span class="sc">@</span>h5</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(beams)){</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    i <span class="ot">&lt;-</span> beams[j]</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">length</span>(gedilevel1b<span class="sc">@</span>h5[[i]]<span class="sc">$</span>names)<span class="sc">&gt;</span><span class="dv">1</span>) {</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>      shot_number_i <span class="ot">&lt;-</span> level1b[[<span class="fu">paste0</span>(i, <span class="st">"/shot_number"</span>)]][]</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>      <span class="cf">for</span>(l <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(shot_number_i)){</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>        shot_number <span class="ot">=</span> shot_number_i[l]</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>        shot_number_id <span class="ot">&lt;-</span> <span class="fu">which</span>(shot_number_i[] <span class="sc">==</span> shot_number)</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>        stale_return_flag <span class="ot">&lt;-</span> level1b[[<span class="fu">paste0</span>(i, <span class="st">"/stale_return_flag"</span>)]][]</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>        elevation_bin0 <span class="ot">&lt;-</span> level1b[[<span class="fu">paste0</span>(i, <span class="st">"/geolocation/elevation_bin0"</span>)]][]</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>        elevation_lastbin <span class="ot">&lt;-</span> level1b[[<span class="fu">paste0</span>(i, <span class="st">"/geolocation/elevation_lastbin"</span>)]][]</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>        rx_sample_count <span class="ot">&lt;-</span> level1b[[<span class="fu">paste0</span>(i, <span class="st">"/rx_sample_count"</span>)]][]</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>        rx_sample_start_index <span class="ot">&lt;-</span> level1b[[<span class="fu">paste0</span>(i, <span class="st">"/rx_sample_start_index"</span>)]][]</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>        rx_sample_start_index_n <span class="ot">&lt;-</span> rx_sample_start_index <span class="sc">-</span> <span class="fu">min</span>(rx_sample_start_index) <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>        rxwaveform_i <span class="ot">&lt;-</span> level1b[[<span class="fu">paste0</span>(i,<span class="st">"/rxwaveform"</span>)]][rx_sample_start_index_n[shot_number_id]<span class="sc">:</span>(rx_sample_start_index_n[shot_number_id] <span class="sc">+</span>  rx_sample_count[shot_number_id] <span class="sc">-</span> <span class="dv">1</span>)]</span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>        rxwaveform_inorm <span class="ot">&lt;-</span> (rxwaveform_i <span class="sc">-</span> <span class="fu">min</span>(rxwaveform_i))<span class="sc">/</span>(<span class="fu">max</span>(rxwaveform_i) <span class="sc">-</span> </span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="fu">min</span>(rxwaveform_i)) <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>        max <span class="ot">&lt;-</span> <span class="fu">max</span>(rxwaveform_i)</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>        elevation_bin0_i <span class="ot">&lt;-</span> elevation_bin0[shot_number_id]</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>        elevation_lastbin_i <span class="ot">&lt;-</span> elevation_lastbin[shot_number_id]</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>        z <span class="ot">=</span> <span class="fu">rev</span>(<span class="fu">seq</span>(elevation_lastbin_i, elevation_bin0_i, (elevation_bin0_i <span class="sc">-</span> elevation_lastbin_i)<span class="sc">/</span>rx_sample_count[shot_number_id]))[<span class="sc">-</span><span class="dv">1</span>]</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>        waveform <span class="ot">&lt;-</span> <span class="fu">rbind</span>(waveform, data.table<span class="sc">::</span><span class="fu">data.table</span>(<span class="at">rxwaveform =</span> rxwaveform_i, </span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">elevation =</span> z, </span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">shot_number =</span> shot_number, </span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">beam =</span> i,</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">stale_return_flag =</span> stale_return_flag,</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">relwave =</span> rxwaveform_i<span class="sc">/</span> max))</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>      }}}</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(waveform) </span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a><span class="co"># extracting 1B data from h5 files:</span></span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a><span class="co"># create lists</span></span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>l_1b_spdf <span class="ot">&lt;-</span> <span class="fu">list</span>() <span class="co"># for a list of shapefiles</span></span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>l_1b_df <span class="ot">&lt;-</span> <span class="fu">list</span>() <span class="co"># for a list of dataframes</span></span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>l_1b_wf <span class="ot">&lt;-</span> <span class="fu">list</span>() <span class="co"># for the full waveform data</span></span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a><span class="co"># loop through each h5 file, extracting information and adding into the list of </span></span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a><span class="co"># shapefiles, dataframes and waveforms:</span></span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span> <span class="fu">length</span>(f_1b)){</span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>  gedi_file <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">"data-raw"</span>, <span class="st">"gedi"</span>, <span class="st">"rewild1b"</span>, f_1b[i]))</span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>  file <span class="ot">&lt;-</span> <span class="fu">paste0</span>(f_1b[i], <span class="st">"/"</span>,gedi_file)</span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>  gedilevel1b <span class="ot">&lt;-</span> <span class="fu">readLevel1B</span>(<span class="at">level1Bpath =</span> <span class="fu">here</span>(<span class="st">"data-raw"</span>, <span class="st">"gedi"</span>, <span class="st">"rewild1b"</span>, file))</span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>  level1b <span class="ot">&lt;-</span>  gedilevel1b<span class="sc">@</span>h5 </span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>  wf <span class="ot">&lt;-</span> <span class="fu">getLevel1BWF</span>(gedilevel1b)</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>  level1bGeo <span class="ot">&lt;-</span> <span class="fu">getLevel1BGeo</span>(<span class="at">level1b=</span>gedilevel1b,</span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>                              <span class="at">select=</span><span class="fu">c</span>(<span class="st">"elevation_bin0"</span>,</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>                                       <span class="st">"elevation_lastbin"</span>))</span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>  level1bGeo<span class="sc">$</span>shot_number <span class="ot">&lt;-</span> <span class="fu">paste0</span>(level1bGeo<span class="sc">$</span>shot_number)</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>  <span class="co">#print(level1bGeo)</span></span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>  <span class="co"># extract date info</span></span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a>  yr <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">substring</span>(gedi_file, <span class="at">first=</span><span class="dv">20</span>, <span class="at">last=</span><span class="dv">23</span>))</span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>  yday <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">substring</span>(gedi_file, <span class="at">first=</span><span class="dv">24</span>, <span class="at">last=</span><span class="dv">26</span>))</span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a>  hh <span class="ot">&lt;-</span> <span class="fu">substring</span>(gedi_file, <span class="at">first=</span><span class="dv">27</span>, <span class="at">last=</span><span class="dv">28</span>)</span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a>  mm <span class="ot">&lt;-</span> <span class="fu">substring</span>(gedi_file, <span class="at">first=</span><span class="dv">29</span>, <span class="at">last=</span><span class="dv">30</span>)</span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a>  ss <span class="ot">&lt;-</span> <span class="fu">substring</span>(gedi_file, <span class="at">first=</span><span class="dv">31</span>, <span class="at">last=</span><span class="dv">32</span>)</span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a>  date_full <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(<span class="fu">paste0</span>(<span class="fu">as.Date</span>(yday, <span class="at">origin =</span> <span class="fu">paste0</span>(yr,<span class="st">"-01-01"</span>)), </span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a>                                 <span class="st">" "</span>,hh, <span class="st">":"</span>, mm, <span class="st">":"</span>, ss ), <span class="at">format=</span><span class="st">"%Y-%m-%d %H:%M:%S"</span>)</span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a>  level1bGeo<span class="sc">$</span>date <span class="ot">&lt;-</span> <span class="fu">as.character</span>(date_full)</span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a>  date <span class="ot">&lt;-</span> <span class="fu">as.character</span>(<span class="fu">paste0</span>(<span class="fu">strftime</span>(date_full, <span class="st">"%d"</span>),<span class="st">"_"</span>,</span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">strftime</span>(date_full, <span class="st">"%m"</span>),<span class="st">"_"</span>,  yr,<span class="st">"_"</span>, hh, <span class="st">"_"</span>, mm, <span class="st">"_"</span>, ss))</span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Converting level1bGeo as data.table to SpatialPointsDataFrame</span></span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a>  level1bGeo_spdf <span class="ot">&lt;-</span> <span class="fu">vect</span>(level1bGeo, <span class="at">geom=</span><span class="fu">c</span>(<span class="st">"longitude_bin0"</span>, <span class="st">"latitude_bin0"</span>))</span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a>  <span class="fu">crs</span>(level1bGeo_spdf) <span class="ot">&lt;-</span>  <span class="st">"EPSG:4326"</span></span>
+<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a>  <span class="co">#terra::writeVector(level1bGeo_spdf,paste0("bethtest/data/gedi_1b/GEDI_1B_", date))</span></span>
+<span id="cb3-112"><a href="#cb3-112" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-113"><a href="#cb3-113" aria-hidden="true" tabindex="-1"></a>  l_1b_spdf[[i]] <span class="ot">&lt;-</span> level1bGeo_spdf</span>
+<span id="cb3-114"><a href="#cb3-114" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-115"><a href="#cb3-115" aria-hidden="true" tabindex="-1"></a>  l_1b_df[[i]] <span class="ot">&lt;-</span> level1bGeo</span>
+<span id="cb3-116"><a href="#cb3-116" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-117"><a href="#cb3-117" aria-hidden="true" tabindex="-1"></a>  l_1b_wf[[i]] <span class="ot">&lt;-</span> wf</span>
+<span id="cb3-118"><a href="#cb3-118" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-119"><a href="#cb3-119" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-120"><a href="#cb3-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-121"><a href="#cb3-121" aria-hidden="true" tabindex="-1"></a>spdf_1b <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, l_1b_spdf)</span>
+<span id="cb3-122"><a href="#cb3-122" aria-hidden="true" tabindex="-1"></a>df_1b <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, l_1b_df)</span>
+<span id="cb3-123"><a href="#cb3-123" aria-hidden="true" tabindex="-1"></a>wf_1b <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, l_1b_wf)</span>
+<span id="cb3-124"><a href="#cb3-124" aria-hidden="true" tabindex="-1"></a>wf_1b<span class="sc">$</span>shot_number <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(wf_1b<span class="sc">$</span>shot_number)</span>
+<span id="cb3-125"><a href="#cb3-125" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-126"><a href="#cb3-126" aria-hidden="true" tabindex="-1"></a><span class="fu">writeVector</span>(spdf_1b,<span class="fu">here</span>(<span class="st">"data-output"</span>, <span class="st">"gedi"</span>, <span class="st">"g1b_full.shp"</span>), <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-127"><a href="#cb3-127" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(df_1b,<span class="fu">here</span>(<span class="st">"data-output"</span>, <span class="st">"gedi"</span>, <span class="st">"g1b_shot_dat.csv"</span>))</span>
+<span id="cb3-128"><a href="#cb3-128" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(wf_1b,<span class="fu">here</span>(<span class="st">"data-output"</span>, <span class="st">"gedi"</span>, <span class="st">"g1b_wave_dat.csv"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="level-2a" class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="level-2a"><span class="header-section-number">1.5</span> Level 2A</h2>
+<p>The GEDI02_A data product contains 156 layers for each of the eight beams, including ground elevation, canopy top height, relative return energy metrics (e.g., canopy vertical structure), and many other interpreted products from the return waveforms.</p>
+<p>Additional information for the layers can be found in the GEDI Level 2A Dictionary: https://lpdaac.usgs.gov/products/gedi02_av002/</p>
+<p>The code below lays out how to access these different metrics from the h5 files, extract them and compile them together for an area of interest.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>f_2a <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">"data-raw"</span>, <span class="st">"gedi"</span>,<span class="st">"rewild2a"</span>)))</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># dont want read mes</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>f_2a <span class="ot">&lt;-</span> f_2a[<span class="sc">-</span><span class="fu">grep</span>(<span class="st">"README"</span>, f_2a)]</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>f_2a <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"data-raw/gedi/rewild2a/"</span>, f_2a, <span class="st">"/"</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>l_2a_sp <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>l_2a_df <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span> <span class="fu">length</span>(f_2a)){</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  gedi_file <span class="ot">&lt;-</span> <span class="fu">list.files</span>(f_2a[i])</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  gedilevel2a <span class="ot">&lt;-</span> <span class="fu">readLevel2A</span>(<span class="at">level2Apath =</span> <span class="fu">paste0</span>(f_2a[i], gedi_file))</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  level2AM <span class="ot">&lt;-</span> <span class="fu">getLevel2AM</span>(gedilevel2a)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="co">#head(level2AM[,c("beam","shot_number","elev_highestreturn","elev_lowestmode","rh100")])</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Converting shot_number as "integer64" to "character"</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  level2AM<span class="sc">$</span>shot_number <span class="ot">&lt;-</span> <span class="fu">paste0</span>(level2AM<span class="sc">$</span>shot_number)</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="co">#compiling date</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  yr <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">substring</span>(gedi_file, <span class="at">first=</span><span class="dv">20</span>, <span class="at">last=</span><span class="dv">23</span>))</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  yday <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">substring</span>(gedi_file, <span class="at">first=</span><span class="dv">24</span>, <span class="at">last=</span><span class="dv">26</span>))</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  hh <span class="ot">&lt;-</span> <span class="fu">substring</span>(gedi_file, <span class="at">first=</span><span class="dv">27</span>, <span class="at">last=</span><span class="dv">28</span>)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>  mm <span class="ot">&lt;-</span> <span class="fu">substring</span>(gedi_file, <span class="at">first=</span><span class="dv">29</span>, <span class="at">last=</span><span class="dv">30</span>)</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  ss <span class="ot">&lt;-</span> <span class="fu">substring</span>(gedi_file, <span class="at">first=</span><span class="dv">31</span>, <span class="at">last=</span><span class="dv">32</span>)</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  date_full <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(<span class="fu">paste0</span>(<span class="fu">as.Date</span>(yday, <span class="at">origin =</span> <span class="fu">paste0</span>(yr,<span class="st">"-01-01"</span>)), <span class="st">" "</span>,hh, <span class="st">":"</span>, mm, <span class="st">":"</span>, ss ), <span class="at">format=</span><span class="st">"%Y-%m-%d %H:%M:%S"</span>)</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>  level2AM<span class="sc">$</span>date <span class="ot">&lt;-</span> <span class="fu">as.character</span>(date_full)</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>  date <span class="ot">&lt;-</span> <span class="fu">as.character</span>(<span class="fu">paste0</span>(<span class="fu">strftime</span>(date_full, <span class="st">"%d"</span>),<span class="st">"_"</span>, <span class="fu">strftime</span>(date_full, <span class="st">"%m"</span>),<span class="st">"_"</span>,  yr,<span class="st">"_"</span>, hh, <span class="st">"_"</span>, mm, <span class="st">"_"</span>, ss))</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Converting Elevation and Height Metrics as data.table to SpatialPointsDataFrame</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>  level2AM_spdf <span class="ot">&lt;-</span> <span class="fu">vect</span>(level2AM, <span class="at">geom=</span><span class="fu">c</span>(<span class="st">"lon_lowestmode"</span>, <span class="st">"lat_lowestmode"</span>))</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Exporting Elevation and Height Metrics as ESRI Shapefile</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>  <span class="co">#terra::writeVector(level2AM_spdf,paste0("bethtest/data/gedi_2a/GEDI_2A_", substring(f_2a[1], first = 20, last = 21), "_", date))</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>  l_2a_sp[[i]] <span class="ot">&lt;-</span> level2AM_spdf </span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>  l_2a_df[[i]] <span class="ot">&lt;-</span> level2AM </span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>sp_2a <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, l_2a_sp)</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>df_2a <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, l_2a_df)</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>terra<span class="sc">::</span><span class="fu">writeVector</span>(sp_2a, <span class="fu">here</span>(<span class="st">"data-output"</span>, <span class="st">"gedi"</span>, <span class="st">"g2a_full.shp"</span>), <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(df_2a, <span class="fu">here</span>(<span class="st">"data-output"</span>, <span class="st">"gedi"</span>, <span class="st">"g2a_full.csv"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="level-2b" class="level2" data-number="1.6">
+<h2 data-number="1.6" class="anchored" data-anchor-id="level-2b"><span class="header-section-number">1.6</span> Level 2B:</h2>
+<p>For 2b you cant use the functions defined in rGEDI directly: something about not all of the beams being detected in every pass. Have 5 - 8 beams for each one S this produces a data frame that is pretty much the length of the number of shots from the study area</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>f_2b <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"data-raw/gedi/rewild2b/"</span>, </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>               <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">"data-raw"</span>, <span class="st">"gedi"</span>, <span class="st">"rewild2b"</span>)))</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>beams <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"BEAM0000"</span>, <span class="st">"BEAM0101"</span>, <span class="st">"BEAM1000"</span>, <span class="st">"BEAM0010"</span>, </span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>           <span class="st">"BEAM0011"</span>, <span class="st">"BEAM0110"</span>, <span class="st">"BEAM0001"</span>, <span class="st">"BEAM1011"</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(f_2b)){</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  file <span class="ot">&lt;-</span> <span class="fu">paste0</span>(f_2b[i],<span class="st">"/"</span>, <span class="fu">list.files</span>(f_2b[i]))</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  gedi2 <span class="ot">&lt;-</span> <span class="fu">readLevel2B</span>(<span class="at">level2Bpath =</span> file)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(beams)){</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    b <span class="ot">&lt;-</span> beams[j]</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">length</span>(gedi2<span class="sc">@</span>h5[[b]]<span class="sc">$</span>names)<span class="sc">&gt;</span><span class="dv">1</span>){</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>      level2b_i <span class="ot">&lt;-</span> gedi2<span class="sc">@</span>h5[[b]]</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>      <span class="co"># this is pulling out what happens in getLevel2BPAIProfile and</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>      <span class="co"># getLevel2BPAVDProfile</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>      m <span class="ot">&lt;-</span> data.table<span class="sc">::</span><span class="fu">data.table</span>(beam <span class="ot">&lt;-</span> <span class="fu">rep</span>(b, <span class="fu">length</span>(level2b_i[[<span class="st">"shot_number"</span>]][])), </span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">shot_number =</span> level2b_i[[<span class="st">"shot_number"</span>]][], </span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">algorithmrun_flag =</span> level2b_i[[<span class="st">"algorithmrun_flag"</span>]][], </span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">l2b_quality_flag =</span> level2b_i[[<span class="st">"l2b_quality_flag"</span>]][], </span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">delta_time =</span> level2b_i[[<span class="st">"geolocation/delta_time"</span>]][], </span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">lat_lowestmode =</span> level2b_i[[<span class="st">"geolocation/lat_lowestmode"</span>]][], </span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">lon_lowestmode =</span> level2b_i[[<span class="st">"geolocation/lon_lowestmode"</span>]][], </span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">elev_highestreturn =</span> level2b_i[[<span class="st">"geolocation/elev_highestreturn"</span>]][], </span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">elev_lowestmode =</span> level2b_i[[<span class="st">"geolocation/elev_lowestmode"</span>]][], </span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">height_lastbin =</span> level2b_i[[<span class="st">"geolocation/height_lastbin"</span>]][], </span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">height_bin0 =</span> level2b_i[[<span class="st">"geolocation/height_bin0"</span>]][],</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>                                  <span class="do">## DTM = level2b_i[["digital_elevaion_model"]][], # new</span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>                                  <span class="do">##  srtm = level2b_i[["digital_elevation_model_srtm"]] # new</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">cover =</span> level2b_i[[<span class="st">"cover"</span>]][],</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">pai =</span> level2b_i[[<span class="st">"pai"</span>]][],</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">omega =</span> level2b_i[[<span class="st">"omega"</span>]][],</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">fhd_normal =</span> level2b_i[[<span class="st">"fhd_normal"</span>]][],</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">pai_z =</span> <span class="fu">t</span>(level2b_i[[<span class="st">"pai_z"</span>]][, <span class="dv">1</span><span class="sc">:</span>level2b_i[[<span class="st">"pai_z"</span>]]<span class="sc">$</span>dims[<span class="dv">2</span>]]),</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">pavd_z =</span> <span class="fu">t</span>(level2b_i[[<span class="st">"pavd_z"</span>]][, <span class="dv">1</span><span class="sc">:</span>level2b_i[[<span class="st">"pavd_z"</span>]]<span class="sc">$</span>dims[<span class="dv">2</span>]]))</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>      <span class="fu">colnames</span>(m) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"beam"</span>, <span class="st">"shot_number"</span>, <span class="st">"algorithmrun_flag"</span>, </span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"l2b_quality_flag"</span>, <span class="st">"delta_time"</span>, <span class="st">"lat_lowestmode"</span>, </span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"lon_lowestmode"</span>, <span class="st">"elev_highestreturn"</span>, <span class="st">"elev_lowestmode"</span>, </span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"height_lastbin"</span>, <span class="st">"height_bin0"</span>, <span class="st">"cover"</span>, <span class="st">"pai"</span>, <span class="st">"omega"</span>, <span class="st">"fhd_normal"</span>,</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">paste0</span>(<span class="st">"pai_z"</span>, <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">30</span> <span class="sc">*</span> <span class="dv">5</span>, <span class="dv">5</span>)[<span class="sc">-</span><span class="dv">31</span>], </span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"_"</span>, <span class="fu">seq</span>(<span class="dv">5</span>, <span class="dv">30</span> <span class="sc">*</span> <span class="dv">5</span>, <span class="dv">5</span>), <span class="st">"m"</span>),</span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">paste0</span>(<span class="st">"pavd_z"</span>, <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">30</span> <span class="sc">*</span> <span class="dv">5</span>, <span class="dv">5</span>)[<span class="sc">-</span><span class="dv">31</span>], </span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"_"</span>, <span class="fu">seq</span>(<span class="dv">5</span>, <span class="dv">30</span> <span class="sc">*</span> <span class="dv">5</span>, <span class="dv">5</span>), <span class="st">"m"</span>)) </span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span>(i <span class="sc">==</span><span class="dv">1</span>){</span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>        df_BVPM <span class="ot">&lt;-</span> m</span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>      }<span class="cf">else</span>{</span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>        df_BVPM <span class="ot">&lt;-</span> <span class="fu">rbind</span>(df_BVPM, m)</span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>df_BVPM<span class="sc">$</span>shot_number <span class="ot">&lt;-</span> <span class="fu">as.character</span>(df_BVPM<span class="sc">$</span>shot_number)</span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>df_BVPM_s <span class="ot">&lt;-</span> df_BVPM[df_BVPM<span class="sc">$</span>l2b_quality_flag <span class="sc">==</span><span class="dv">1</span>,]</span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">vect</span>(df_BVPM, <span class="at">geom=</span><span class="fu">c</span>(<span class="st">"lon_lowestmode"</span>, <span class="st">"lat_lowestmode"</span>))</span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(m)</span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>ms <span class="ot">&lt;-</span> <span class="fu">vect</span>(df_BVPM_s, <span class="at">geom=</span><span class="fu">c</span>(<span class="st">"lon_lowestmode"</span>, <span class="st">"lat_lowestmode"</span>))</span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(ms)</span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a><span class="co"># R has a 10 character limit for colnames in shapefiles so saving as df too. </span></span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(df_BVPM_s, <span class="fu">here</span>(<span class="st">"data-output"</span>, <span class="st">"gedi"</span>, <span class="st">"g2b_QC.csv"</span>))</span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a><span class="fu">writeVector</span>(m, <span class="fu">here</span>(<span class="st">"data-output"</span>, <span class="st">"gedi"</span>, <span class="st">"g2b_full.shp"</span>), <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a><span class="fu">writeVector</span>(ms, <span class="fu">here</span>(<span class="st">"data-output"</span>, <span class="st">"gedi"</span>, <span class="st">"g2b_QC.shp"</span>), <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="level-4" class="level2" data-number="1.7">
+<h2 data-number="1.7" class="anchored" data-anchor-id="level-4"><span class="header-section-number">1.7</span> Level 4:</h2>
+<p>We aren’t going to explore the level 3 data here as that is just gridded 1km products from the 2b data. The level 4 data is the most highly processed data products, including aboveground biomass estimates.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#outdir &lt;- here("data-raw", "gedi", "knepp4a")</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="do">##Get the list of all files available for the study area in the period selected,</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">#using just_path = T</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#lr_lon &lt;- ext(s)$xmin </span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#lr_lat &lt;- ext(s)$ymin</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#ul_lon &lt;- ext(s)$xmax</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#ul_lat &lt;- ext(s)$ymax</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">#Get the list of all files available for the study area in the period selected,</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">#using just_path = T</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co">#file_path &lt;- l4_download(</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">#  ul_lat,</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co">#  lr_lat,</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co">#  ul_lon,</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co">#  lr_lon,</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co">#  outdir = outdir,</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="co">#  from = "2020-01-01",</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co">#  to = "2022-07-20",</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co">#  just_path = T</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co">#)</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="co"># this is very time consuming</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="co">#download files</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="co">#file_download &lt;- l4_download(</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co">#  ul_lat,</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="co">#  lr_lat,</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="co">#  ul_lon,</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="co">#  lr_lon,</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="co">#  ncore = parallel::detectCores()-1,</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="co">#  outdir = outdir,</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="co">#  from = "2020-01-01",</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="co">#  to = "2022-07-20",</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="co">#  just_path = F</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="co">#  #subset=1:4</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a><span class="co">#)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">#### reading:</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>l <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">"data-raw"</span>, <span class="st">"gedi"</span>, <span class="st">"rewild4a"</span>))</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>l <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"data-raw/gedi/rewild4a/"</span>, l)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co">#list all dataset in h5 file</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>dataname <span class="ot">&lt;-</span> <span class="fu">l4_getmulti</span>(l[[<span class="dv">1</span>]],<span class="at">just_colnames =</span> T)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(dataname, <span class="dv">183</span>) <span class="co"># has 183 entries</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">#read all footprint and merge them together.</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">#!! this will use all CPUs available unless you specify otherwise!!</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">#gediL4_path &lt;- l4_getmulti(l,merge=T, ncore =3)</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">#select other columns to add to the default output.</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co">#if columns are already present in the default output they will be dropped</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>col <span class="ot">&lt;-</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">"land_cover_data/leaf_off_flag"</span>,</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">"agbd_pi_lower"</span>,</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">"agbd_pi_upper"</span>,</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">"lat_lowestmode"</span>,</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">"lon_lowestmode"</span>,</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">"land_cover_data/landsat_treecover"</span>,        </span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    <span class="st">"land_cover_data/landsat_water_persistence"</span>,</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    <span class="st">"land_cover_data/leaf_off_doy"</span>, </span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">"land_cover_data/leaf_on_cycle"</span>,            </span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">"land_cover_data/leaf_on_doy"</span>,</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">"land_cover_data/pft_class"</span>,                </span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">"land_cover_data/region_class"</span>,</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">"land_cover_data/shot_number"</span>,              </span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="st">"land_cover_data/urban_focal_window_size"</span> ,</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    <span class="st">"land_cover_data/urban_proportion"</span>,  </span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    <span class="st">"agbd"</span><span class="co">#this will be dropped as it is already included by default in the output.</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="co">#get level 4 data with the user defined column binded and with the source path of each observation</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="co">#with source=T a column with the source path for each observation will be added</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>gediL4 <span class="ot">&lt;-</span> <span class="fu">l4_getmulti</span>(l,<span class="at">add_col =</span> col,<span class="at">source=</span>T, <span class="at">merge =</span> T, <span class="at">ncore=</span> <span class="dv">2</span>)</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a><span class="do">### CLIPPING:</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Clipping using shapefile</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>clipped <span class="ot">&lt;-</span> <span class="fu">l4_clip</span>(gediL4,<span class="at">clip=</span>s,<span class="at">usegeometry =</span> F)</span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a><span class="co"># save as csv</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(clipped, <span class="fu">here</span>(<span class="st">"data-output"</span>, <span class="st">"gedi"</span>, <span class="st">"4a_gedi_knepp.csv"</span>))</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a><span class="co"># saving output</span></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>t <span class="ot">&lt;-</span> <span class="fu">vect</span>(clipped, <span class="at">geom=</span><span class="fu">c</span>(<span class="st">"lon_lowestmode"</span>,<span class="st">"lat_lowestmode"</span>))</span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a><span class="fu">writeVector</span>(t, <span class="fu">here</span>(<span class="st">"data-output"</span>, <span class="st">"gedi"</span>, <span class="st">"GEDI_4A_all.shp"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Level 4b data is the 1km gridded estimates, this is a product extrapolated from the beam-level data. The data is provided in a standard .tif file so it is easier to process than the other level GEDI products.</p>
+<p>For our example of the Knepp estate, this data isn’t particuarly meaningful.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="do">###############################################################################</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="do">### 4B: this is gridded to the 1km square so it doesn't show much in this particular example </span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">#list.files(here("data", "gedi", "gedi_4b", "GEDI_L4B_Gridded_Biomass_2017", "data")</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">#           g4b &lt;- rast(here("data", "gedi","gedi_4b", "GEDI_L4B_Gridded_Biomass_2017", "data", #"GEDI04_B_MW019MW138_02_002_05_R01000M_MU.tif")</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co">#                      s &lt;- vect("data/gedi/knepp_outline.shp")</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co">#                       s &lt;- terra::project(s, "epsg:4326")#  "+proj=longlat +datum=WGS84"</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">#                       </span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">#                       g4b &lt;- project(g4b, "EPSG:4326") # currently as lat long</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co">#                       subset_4b &lt;- crop(g4b, ext(s))</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co">#                       plot(subset_4b)</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co">#                       </span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="co">#                       terra::writeRaster(subset_4b, here("data", "gedi" , "gedi_4b", "GEDI_4b_knepp.tif")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./index.html" class="pagination-link" aria-label="Preface">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Preface</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./gedi_exploration.html" class="pagination-link" aria-label="GEDI data exploration">
+        <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">GEDI data exploration</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

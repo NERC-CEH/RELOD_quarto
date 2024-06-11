@@ -1,0 +1,362 @@
+---
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Strawberry Hill analysis
+
+This script loads the point clouds from the photogrammetry of a drone
+pass over Strawberry Hill, Bedfordshire, a rewilding site managed by the
+Wildlife Trust.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Setup
+library(tidyterra)
+library(renv)
+library(RCurl)
+library(devtools)
+library(lidR)
+library(RCSF)
+library(raster) # These functions rely on the raster package which is being superceded by terra
+# terra isn't compatable with all other packages used here though, so raster is still needed
+library(ggplot2)
+library(foreach)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(doParallel) # for parallel computing
+library(viridis)
+library(mapview)
+library(rayshader)
+library(lidR)
+library(terra)
+library(here)
+library(future)
+library(tidyverse)
+library(sf)
+library(ggpubr)
+library(lwgeom)
+library(rlas)
+library(htmltools)
+library(sp)
+
+rm(list=ls())
+here()
+
+```
+
+The point clouds were created in several separate files, based on an
+area of the drone pass on different days. As a result we have 8 laz
+files, some of which overlap a little. To improve processing time,
+rather than separately loading in each different laz file, we will first
+retile the laz files into smaller individual tiles, 250m across, that
+are saved in the data-output folder. In lidR, the functions are designed
+to deal with either individal las files or these las catalogues, so it
+will be much easier and quicker to process this way.
+
+load in the original laz files produced from the structure from motioin
+drone photogrammetry once:
+
+```{r, eval= FALSE}
+
+las1 <- readLAS(here("data-raw", "sh_pointcloud", 
+                     "Knotting-and-Souldrop-8-9-2023-georeferenced_model.laz"))
+
+las2 <- readLAS(here("data-raw", "sh_pointcloud", 
+                     "Melchbourne-Road-8-10-2023-georeferenced_model.laz"))
+
+las3 <- readLAS(here("data-raw", "sh_pointcloud", "Knotting-and-Souldrop-8-9-2023-georeferenced_model_2.laz"))
+
+las4 <- readLAS(here("data-raw", "sh_pointcloud", "Knotting-and-Souldrop-8-9-2023-georeferenced_model_3.laz"))
+
+las5 <- readLAS(here("data-raw", "sh_pointcloud",
+                     "MK44-58-8-10-2023-georeferenced_model.laz"))
+
+las6 <- readLAS(here("data-raw", "sh_pointcloud", "Knotting-and-Souldrop-8-9-2023-georeferenced_model_4.laz"))
+
+las7 <- readLAS(here("data-raw", "sh_pointcloud", "Knotting-and-Souldrop-8-9-2023-georeferenced_model_5.laz"))
+
+## retiling:
+ctg <- readLAScatalog(here("data-raw", "sh_pointcloud"))
+opt_chunk_buffer(ctg) <- 0
+opt_chunk_size(ctg) <- 250
+opt_output_files(ctg) <- paste0("data-output/sh/las_cat_250/retile_{XLEFT}_{YBOTTOM}")
+plot(ctg, chunk = TRUE)
+catalog_retile(ctg)
+
+```
+
+```{r}
+# I have explicitly written the pathway here rather than using here() as it misclassified
+# the file path
+ctg <- readLAScatalog("/data/notebooks/rstudio-analysis/data-output/sh/las_cat_250")
+las <- readLAS(ctg,filter = "-drop_z_below 0")
+
+# This plot will not properly load on datalabs because it produces a 3d popup box 
+#plot(las)
+
+
+### do the chm for the whole area: 
+chm <- rasterize_canopy(las, res = 0.5, p2r())
+#writeRaster(chm, here("data-output","sh", "chm.tif"))
+plot(chm)
+
+# this removes the gaps within the point cloud:
+kernel <- matrix(1,3,3)
+chm_p2r_05_smoothed <- terra::focal(chm, w = kernel, fun = median, na.rm = TRUE)
+plot(chm_p2r_05_smoothed)
+
+#writeRaster(chm_p2r_05_smoothed, here("data-output","sh", "chm_smooth.tif"))
+
+```
+
+```{r, eval = FALSE}
+
+# Identifying position of tree tops:
+# ws: 	 numeric or function. Length or diameter of the moving window 
+# used to detect the local maxima in the units of the input data 
+# (usually meters). If it is numeric a fixed window size is used.
+# hmin: numeric. Minimum height of a tree. Threshold below which a 
+# pixel or a point cannot be a local maxima. Default is 2.
+
+# as you increase the hmin from 0.2 to 1, it doesn't seem to make a difference
+# in the number of trees that are found. 
+# if you increase the ws from 1 to 2, that does affect the number of trees identified
+# by quite a substantial amount.
+
+f <- function(x) {x * 0.2 + 1}
+heights <- seq(0,5)
+ws <- f(heights)
+
+# writing your own function is much more time consuming than using a standard
+# circle size.
+ttops <- vect(locate_trees(las, lmf(f)))
+ttops <- as_sf(ttops)
+algo <- dalponte2016(chm, ttops)
+crowns <- algo()
+writeVector(vect(ttops), here("data-output", "ttops_07_12.shp"))
+writeRaster(crowns, here("data-outputs", "crowns_30_11.tif"))
+
+```
+
+Vegetation data collection at Strawberry hill: data preparation to
+prepare with structure from motion pointcloud:
+
+```{r}
+################################################################################
+# vegetation plot positions:
+shp_p <- vect(here("data-raw", "relod_plot_location", "tree.shp"))
+# x and y are the SW corner
+
+# creating a box with a buffer around the 5m plot:
+df_shp <- as.data.frame(shp_p, geom = "XY")
+
+df_shp$ymax <- df_shp$y + 5
+df_shp$xmax <- df_shp$x + 5
+df_shp$ymin <- df_shp$y 
+df_shp$xmin <- df_shp$x
+
+v_extents <- list()
+for(i in 1:nrow(df_shp)){
+  v_ext <- ext(c(df_shp[i,"xmin"], df_shp[i,"xmax"], df_shp[i,"ymin"],  df_shp[i,"ymax"]))
+  v <- vect(v_ext)
+  v$id <- df_shp$id[i]
+  v_extents[[i]] <- v
+  
+}
+
+shp_plots <- do.call(rbind, v_extents)
+crs(shp_plots) <- "EPSG:27700"
+
+# reprojecting to the coordinate reference system used in the point cloud:
+shp_plots <- terra::project(shp_plots, "EPSG:32630")
+
+# plot the plot positions and the extent of the point cloud here:
+plot(shp_plots)
+
+#writeVector(shp_plots, here("data-output", "sh_plot_27_11.shp"))
+
+###############################################################################
+#### with a buffer:
+# plot positions:
+df_shp <- as.data.frame(shp_p, geom = "XY")
+
+df_shp$ymax <- df_shp$y + 15
+df_shp$xmax <- df_shp$x + 15
+df_shp$ymin <- df_shp$y - 10
+df_shp$xmin <- df_shp$x - 10
+
+v_extents <- list()
+for(i in 1:nrow(df_shp)){
+  v_ext <- ext(c(df_shp[i,"xmin"], df_shp[i,"xmax"], 
+                 df_shp[i,"ymin"],  df_shp[i,"ymax"]))
+  v <- vect(v_ext)
+  v$id <- df_shp$id[i]
+  v_extents[[i]] <- v
+  
+}
+
+shp_plotsb <- do.call(rbind, v_extents)
+crs(shp_plotsb) <- "EPSG:27700"
+# reprojecting to the coordinate reference system used in the point cloud:
+shp_plotsb <- terra::project(shp_plotsb, "EPSG:32630")
+# plot the plots and the extent of the point cloud here:
+plot(shp_plotsb)
+
+#writeVector(shp_plotsb, here("data-output", "plot_buffer.shp"))
+
+############### loading the tree data
+
+df_trees <- read.csv(here( "data-raw", "tree_level_23_11.csv"))
+df_trees <- df_trees[,1:12]
+# want to remove 186
+names(df_trees) <- c("id", "tree_id", "photo", "sp", "height_m", 
+                     "cw_1", "cw_2", "c_area", "overstory",
+                     "outside_plot", "position_N", "position_E")
+df_trees <- df_trees[!is.na(df_trees$cw_1),]
+
+df_trees$id <- tolower(df_trees$id)
+df_trees$id[118:179] <- gsub('[u]', '',df_trees$id[118:179])
+
+# plot positions:
+shp_p <- vect(here("data-raw", "relod_plot_location", "tree.shp"))
+# x and y are the SW corner
+# creating a box with a buffer around the 5m plot:
+
+df_shp <- as.data.frame(shp_p, geom = "XY")
+df_shp <- left_join(df_shp, df_trees, by = "id")
+df_shp$position_E <- as.numeric(df_shp$position_E)
+df_shp$position_N <- as.numeric(df_shp$position_N)
+
+df_shp$treex <- df_shp$x + df_shp$position_E
+df_shp$treey <- df_shp$y + df_shp$position_N
+df_shp$ID <- 1:nrow(df_shp)
+
+for(i in 1:nrow(df_shp)){
+  df_shp$m_cw[i] <- mean(c(df_shp$cw_1[i], df_shp$cw_2[i]), na.rm = T)
+}
+
+df_shp$m_cw[which(is.na(df_shp$m_cw))] <- 0.1
+
+v_trees <- vect(df_shp, geom=c("treex", "treey"))
+crs(v_trees) <- "EPSG:27700"
+v_trees <- terra::project(v_trees, "EPSG:32630")
+
+v_trees <- crop(v_trees, ext(shp_plotsb))
+
+plot(v_trees)
+#writeVector(v_trees, here("data-output", "v_trees.shp"))
+# add a buffer to the tree point depending on the size of the crown:
+tsp <- list()
+
+for(i in 1:nrow(v_trees)){
+  t <- v_trees[i,]
+  bt <- buffer(t, df_shp$m_cw[i]/2)
+  tsp[[i]] <- bt
+}
+
+v_tsp <- vect(tsp)
+
+#writeVector(v_tsp, here("data-output", "tree_buffer.shp"))
+
+```
+
+Combining the datasets together for comparison:
+
+```{r}
+
+# want to crop the crowns and tree tops to the area of each plot:
+ttops <- vect(here("data-output", "ttops_07_12.shp"))
+
+shp_plotsb <- vect(here("data-output", "plot_buffer.shp"))
+
+ttopsb <- terra::crop(ttops, shp_plotsb)
+
+#writeVector(ttopsb, here("data-output", "ttopsb.shp"))
+
+# hasn't been done yet:
+#crownsb <- terra::mask(crowns, shp_plotsb)
+#writeRaster(crownsb, here("data-output", "crownsb_30_11.tif"))
+
+shp_plots <- vect(here("data-output", "sh_plot_27_11.shp"))
+ttopsplot <- terra::crop(ttops, shp_plots)
+#crownsplot <- terra::mask(crowns, shp_plots)
+
+t <- terra::extract(shp_plots, ttopsplot)
+t <- terra::relate(shp_plots, ttopsplot, "contains")
+t[t ==TRUE] <- 1
+t[t == FALSE] = 0
+n_trees <- as.numeric(rowSums(t))
+df <- as.data.frame(cbind(n_trees = n_trees, id = shp_plots$id))
+head(df_trees)
+df_plot <- df_trees %>% group_by(id) %>% summarise(measured_trees = n())
+df <- left_join(df, df_plot, by = "id")
+head(df)
+
+ggplot(df, aes(x = n_trees,y = measured_trees)) +
+  geom_point() +
+  geom_smooth()
+
+```
+
+```{r eval=FALSE, include=FALSE}
+###### plotting a figure including all the information:
+# canopy height model, the plot position, the trees measured on the ground, 
+# the trees identified through the classification:
+v_plots <- unique(shp_plots$id)
+v_plots <- v_plots[!(v_plots %in% c("w1", "w2", "f3"))] # something wrong with friday 3
+for(i in 1:length(v_plots)){
+  
+  id <- v_plots[i]
+  plot <- shp_plots[shp_plots$id ==id,]
+  plotb <- shp_plotsb[shp_plotsb$id== id,]
+  trees <- v_trees[v_trees$id == id,]
+  tree_canopy <- v_tsp[v_tsp$id ==id,]
+  chm_subset <- crop(chm, plotb)
+  ttops_subset <- crop(ttops, plotb)
+  #ttops20cm_subset <- crop(ttops_20cm, plotb)
+  
+  #crowns1m_sub <- crop(crowns_1m, plotb)
+  #crowns20cm_sub <- crop(crowns_20cm, plotb)
+  
+  
+  png(here("data-output", "figures", paste0("fig_1m", id, ".png")))
+  plot(chm_subset, main = paste0("plot ", id))
+  plot(plot, add = TRUE)
+  plot(tree_canopy, add = TRUE)
+  points(trees, pch = 3)
+  points(ttops_subset, col = "darkgreen")
+  #plot(canopy, add = TRUE)
+  dev.off()
+  
+}
+
+```
+
+############################################################################### 
+
+## <!--#  Comparing estimated height from point cloud with heights measured on the ground:-->
+
+```{r eval=FALSE, include=FALSE}
+v_tsps <- v_tsp[v_tsp$id %in% v_plots,]
+# height for each 
+test <- terra::extract(chm, v_tsps)
+test_sum <- test %>% group_by(ID) %>% summarise(mean = mean(Z, na.rm = T), 
+                                                sd = sd(Z, na.rm = T),
+                                                max = max(Z))
+df_shp2 <- left_join(test_sum, df_shp, by = "ID")
+
+
+ggplot(df_shp2, aes(x = height_m, y = max)) +
+  geom_point(aes(size = m_cw)) +
+  geom_abline(slope =1 , intercept = 0) +
+  geom_smooth(method = "lm")
+
+# in inaccuracies: the satellite GPS is like < 25cm out. But the drone pass? could 
+# that be quite out?
+
+```

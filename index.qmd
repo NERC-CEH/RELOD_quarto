@@ -1,0 +1,9 @@
+# Preface {.unnumbered}
+
+***RE-LOD - Testing the Limits Of remote sensing for Detecting forest and woodland structural and biomass REcovery***
+
+Project team: Beth Raine, Lindsay Banin, Richard Broughton, Charles George, and Michael Tso (UKCEH)
+
+This e-book provides additional markdown documents that contain code snippets to showcase some of the analysis discussed in the RE-LOD project report.
+
+All of the content of this repository is licensed [CC0](https://creativecommons.org/publicdomain/zero/1.0/).

@@ -1,0 +1,43 @@
+# Sentinel 1 SAR time-lapse image
+
+This example python script to create is adapted from the geemap tutorial: <https://geemap.org/notebooks/123_sentinel1_timelapse/>
+
+``` python
+#python
+
+# !pip install -U geemap
+import ee
+import geemap
+Map = geemap.Map()
+Map
+```
+
+Pan and zoom to an area of interest and draw a rectangle on the map.
+
+``` python
+roi = Map.user_roi
+if roi is None:
+  roi = ee.Geometry.BBox(117.1132, 3.5227, 117.2214, 3.5843) # change as needed
+Map.addLayer(roi)
+Map.centerObject(roi)
+timelapse = geemap.sentinel1_timelapse(
+  roi,
+  out_gif="sentinel1.gif",
+  start_year=2019,
+  end_year=2019,
+  start_date="04-01",
+  end_date="08-01",
+  frequency="day",
+  vis_params={"min": -30, "max": 0},
+  palette="Greys",
+  frames_per_second=3,
+  title="Sentinel-1 Timelapse",
+  add_colorbar=True,
+  colorbar_bg_color="gray",
+)
+geemap.show_image(timelapse)
+```
+
+The following is a time-lapsed SAR image for the Knepp Estate.
+
+![Knepp Esatate Sentinel 1 SAR time lapse](sentinel1%20Knepp.gif)

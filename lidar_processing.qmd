@@ -1,0 +1,436 @@
+# LiDAR data processing
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, eval = TRUE, message = FALSE}
+#library(doMC)
+library(renv)
+library(RCurl)
+library(devtools)
+library(lidR)
+library(raster) # These functions rely on the raster package which is being superceded by terra
+# terra isn't compatable with all other packages used here though, so raster is still needed
+library(ggplot2)
+library(foreach)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(doParallel) # for parallel computing
+library(viridis)
+library(mapview)
+library(lidR)
+library(terra)
+library(here)
+library(future)
+library(rayshader)
+library(tidyverse)
+library(ggpubr)
+
+```
+
+```{r}
+# you set this for when you want things to be computed in parallel
+#detectCores() # I have 4 cores, so will use 3 for the computation here:
+# see https://rdrr.io/cran/lidR/man/lidR-parallelism.html
+
+plan(multisession, workers = 3L)
+theme_set(theme_classic())
+
+# creating a world map for plotting
+world <- ne_countries(scale="medium", returnclass="sf")
+world <- sf::st_as_sf(world, coords=c("x","y"), crs = 27700, agr = "constant", remove = F)
+
+```
+
+## Pre-processing steps
+
+This R script takes a pre-processed point cloud from a UAV drone pass file .laz or .las. It reads the files in using the LAStools package, which is a separate executable programme which can be implemented through R. .laz files are zipped versions of .las files. They can be good for storing large amounts of data, however they do take time to unzip each time you use them so are not always better than .las files for storing drone data.
+
+A really useful place to start is the lidR package which has detailed tutorials: lidR book: https://r-lidar.github.io/lidRbook/index.html This lays out a lot of the preprocessing steps:
+
+readLAS(filter = "-help")
+
+can thin the dataset before you read it filter = "xyz" removes all but the point cloud data filter = "-keep_first" : commonly used in forestry filter = "-keep_every_nth x" used for thinning out the point cloud to reduce the size
+
+### Thinning and filtering:
+
+```{r, eval = FALSE}
+
+# Load a LAScatalog instead of a LAS file
+## try reading the full las file and thin it:
+
+# this is a big file and it does take a while to load even when thinned
+# try thin_with_grid
+las_first <- readLAS(here("data-raw", "lidar", "Knepp_points_processed_merged.las"),
+             filter = "-keep_first")
+writeLAS(las_first, here("data-raw", "lidar", "knepp_full_keep_first.las"))
+# make sure you have the most up to date version of lidR
+
+# this is one every 20cm - this is still very high resolution and probably enough for processing
+las_100th <- lidR::readLAS(here("data-raw", "lidar" "Knepp_points_processed_merged.las"), 
+                    filter = "-keep_every_nth 100")
+
+writeLAS(las_100th, here("data-output", "lidar_outputs", "knepp_full_thin_100.las"))
+
+las_10th <- readLAS(here("data-raw", "lidar", "Knepp_points_processed_merged.las"),
+               filter = "-keep_every_nth 10")
+writeLAS(las_10th, here("data-raw", "lidar", "knepp_full_thin_10.las"))
+
+```
+
+### Retiling:
+
+Splitting into smaller tiles for ease of processing
+
+```{r, eval= FALSE}
+
+ctg <- readLAScatalog(here("data-output", "lidar_outputs", "knepp_full_thin_100.las"))
+opt_chunk_buffer(ctg) <- 0
+opt_chunk_size(ctg) <- 250
+opt_output_files(ctg) <- paste0("data-output/lidar_outputs/las_cat_10", "/retile_{XLEFT}_{YBOTTOM}")
+plot(ctg, chunk = TRUE)
+catalog_retile(ctg)
+
+```
+
+Loading in our .las file:
+
+```{r load lidar, eval = TRUE}
+
+# Process it like a LAS file
+ctg <- readLAScatalog(here("data-output/lidar_outputs/las_cat_100"))
+
+las <- readLAS(ctg,filter = "-drop_z_below 0")
+
+#plot(las)
+
+```
+
+### Classifying the ground
+
+I think this had already been done in the original knepp point cloud. So this is redoing that as it isn't always accurate. It includes pmf, csf and mcc for ground classification. ws = Sequence of windows sizes to be used in filtering ground returns. The values must be positive and in the same units as the point cloud (usually meters, occasionally feet).
+
+th = numeric. Sequence of threshold heights above the parameterized ground surface to be considered a ground return. The values must be positive and in the same units as the point cloud. Values used here as in "Estimating Forest Structure from UAV-Mounted LiDAR Point Cloud Using Machine Learning"
+
+```{r, eval = TRUE, message = FALSE}
+
+# this is time consuming
+#ws <- seq(0.5, 2.5, 3)
+#th <- seq(0.1,0.5, length.out = length(ws))
+
+# this function extracts some default ws and th values to use from 
+# the Zhang paper
+
+p <- util_makeZhangParam(
+  b = 2,
+  dh0 = 0.5,
+  dhmax = 3,
+  s = 1,
+  max_ws = 20,
+  exp = FALSE
+)
+las <- classify_ground(las, algorithm = pmf(ws = p$ws, th = p$th))
+
+#las <- classify_ground(las, algorithm = pmf())
+
+# this is 3d so wont render on datalabs
+#plot(las, color = "Classification", size = 3, bg = "white") 
+
+```
+
+```{r, eval = FALSE}
+
+# can subset out the ground just to look at that:
+
+gnd <- filter_ground(las)
+# this plots the point cloud of the ground
+
+
+plot(gnd, size = 3, bng= "white")
+
+
+### cloth fold simulation method of ground classification: 
+
+library(RCSF)
+
+mycsf <- csf(sloop_smooth = FALSE, rigidness = 2)
+las <- classify_ground(las, mycsf)
+
+#plot_crossection(las, colour_by = factor(Classification))
+
+# plotting cross sections of the ground
+#las_f <- las
+#las_f@data$Classification <- as.factor(las_f@data$Classification)
+#levels(las_f@data$Classification) <- c("ground", "low veg", "med veg", "high veg",
+#                                     "building", "noise", "10","13", "14" ,
+#                                     "15", "18", "22" )
+
+v_n <- seq(0.1, 0.95, by = 0.1)
+for(i in 1:length(v_n)){
+  n <- v_n[i]
+  p1 = c(min(las@data$X), quantile(las@data$Y, n))
+  p2 = c(max(las@data$X), quantile(las@data$Y,n))
+  data_clip <- clip_transect(las, p1, p2, 4)
+  
+  g <- ggplot(data_clip@data, aes(X,Z, colour= factor(Classification))) + 
+    geom_point(size = 0.5) + 
+    #coord_equal() + 
+    theme(axis.title.y=element_blank(),
+          axis.title.x=element_blank()) +
+    theme(legend.position="bottom") +
+    scale_colour_brewer(palette= "Paired")
+  
+  assign(paste0("g_", n), g)
+  
+}
+
+
+ggarrange(g_0.1, g_0.2, g_0.3, g_0.4, g_0.5,
+          g_0.6, g_0.7, g_0.8, g_0.9,
+          ncol = 1, 
+          common.legend = T, 
+          legend.position = "bottom")
+
+# can also use the cloth simulation to select the ground
+# or multiscale curvature classification
+```
+
+## The digital terrain model:
+
+DTM is the image of the ground do this after you have classified the ground
+
+have different methods like invert distance weighting, kriging triangular irregular network
+
+```{r, eval = FALSE}
+dtm_tin <- rasterize_terrain(las, res = 2, algorithm = tin())
+plot(dtm_tin)
+if(FALSE){
+plot_dtm3d(dtm_tin, bg = "white") 
+}
+
+# duifferent ways of producing digital terrain model
+#dtm <- rasterize_terrain(las, algorithm = tin(), pkg ="terra")
+if(FALSE){
+plot_dtm3d(dtm, bg = "white") 
+}
+
+
+#dtm_prod <- terrain(dtm, v = c("slope", "aspect"), unit = "radians")
+#dtm_hillshade <- shade(slope = dtm_prod$slope, aspect = dtm_prod$aspect)
+if(FALSE){
+plot(dtm_hillshade, col =gray(0:30/30), legend = FALSE)
+}
+if(FALSE){
+dtm <- raster::raster(dtm_tin)
+
+elmat <- raster_to_matrix(dtm)
+map <- elmat %>%
+  sphere_shade(texture = "imhof1", progbar = FALSE) %>%
+  add_water(detect_water(elmat), color = "imhof1") %>%
+  add_shadow(ray_shade(elmat, progbar = FALSE), 0.5) %>%
+  add_shadow(ambient_shade(elmat, progbar = FALSE), 0)
+
+plot_map(map)
+
+### can then normalise the height based on the dtm:
+nlas <- normalize_height(las, knnidw())
+
+plot(nlas, size = 4, bg = "white")
+
+# here I've just manually removed Z values < 0 which is not good:
+  # its a sign that the dtm has incorrectly classified the ground
+  # at several points: but there were only like 3 isolated points so 
+  # for now I think this is fine.
+  
+  nlas <- nlas[nlas@data$Z >0,]
+  plot(nlas, size = 4, bg = "white")
+  
+  hist(filter_ground(nlas)$Z,   breaks = seq(-0.6, 0.6, 0.01), main = "", xlab = "Elevation")
+  }
+```
+
+## Classification term
+
+classification listed as numbers 2,3,4,5,6,10,13,15,18,22 table(las\@data\$Classification)
+
+chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/http://www.asprs.org/wp-content/uploads/2019/07/LAS_1_4_r15.pdf
+
+ASPRS specification of standard point classes: 0 = Created, never classified 1 = unclassified 2 = ground 3 = low vegetation 4 = medium vegetation 5 = high vegetation 6 = building 7 = low point (noise) 8 = model key point (mass point) 9 = water 10, 11 = reserved for ASPRS definition 12 = overlap points 13 - 31 = reserved for ASPRS definition
+
+Can change classification based on rules:
+
+```{r, eval = FALSE}
+# Classifies the points that are NOT in the lake and that are NOT ground points as class 5
+
+################
+#plot(las, color = "Classification")
+
+nonveg <- filter_poi(las, Classification != LASHIGHVEGETATION)
+veg <- filter_poi(las, Classification == LASHIGHVEGETATION)
+
+plot(las, color = "Classification", bg = "white", size = 3)
+
+## cross section 2d rendering:
+summary(las)
+
+## function:
+
+plot_crossection <- function(las,
+                             p1 = c(min(las@data$X), mean(las@data$Y)),
+                             p2 = c(max(las@data$X), mean(las@data$Y)),
+                             width = 4, colour_by = NULL)
+{
+  colour_by <- enquo(colour_by)
+  data_clip <- clip_transect(las, p1, p2, width)
+  p <- ggplot(data_clip@data, aes(X,Z)) + 
+    geom_point(size = 0.5) + 
+    coord_equal() + 
+    theme_minimal()
+  
+  if (!is.null(colour_by))
+    p <- p + aes(color = !!colour_by) + labs(color = "") +
+    theme(legend.position="bottom")
+  
+  return(p)
+}
+
+plot_crossection(las)
+```
+
+## DIGITAL SURFACE MODEL and canopy height model:
+
+raster layer that report the highest elevation for the ALS returns
+
+```{r, eval = FALSE}
+# Can specify the thr and the edg
+# Can specify point to raster based or triangulation based
+# Includes the Khosravirpour et al pitfree algorithm
+
+chm <- rasterize_canopy(las, res = 2, algorithm = p2r())
+col <- height.colors(25)
+plot(chm, col = col)
+
+# can decrease the resolution to cover the empty areas
+# can add a circle of known radius that simulates that the laser is not a point
+# but a circle
+
+# can also fill in the unfilled areas by kriging
+# this is more time consuming
+# but it also looks a LOT BETTER
+chm <- rasterize_canopy(las, res = 0.5, p2r(0.2, na.fill = tin()))
+plot(chm, col = col)
+
+#png("outputs/chm_11_01.png", width = 15, height = 15, units = "cm", res = 600)
+#plot(chm, col= col)
+#dev.off()
+
+#plot(chm, color = "Intensity", bg = "white", legend = TRUE)
+
+# overlays: need a dtm for this to work
+# think this is a pop out
+x <- plot(las, bg = "white", size = 3)
+add_dtm3d(x, chm)
+
+
+# lidR does not include tools to fill empty pixels but terra does:
+if(FALSE){
+  fill.na <- function(x, i=5) { 
+    if (is.na(x)[i]) { return(mean(x, na.rm = TRUE)) } else { return(x[i]) }}
+  
+  w <- matrix(1, 3, 3)
+  
+  chm <- rasterize_canopy(las, res = 0.5, 
+                          algorithm = p2r(subcircle = 0.25), pkg = "terra")
+  filled <- terra::focal(chm, w, fun = fill.na)
+  smoothed <- terra::focal(chm, w, fun = mean, na.rm = TRUE)
+  
+  chms <- c(chm, filled, smoothed)
+  names(chms) <- c("Base", "Filled", "Smoothed")
+  plot(chms, col = col)
+}
+```
+
+## Locating trees:
+
+```{r, eval = FALSE}
+# lmf(ws, hmin = 2, shape = c("circular", "square"), ws_args = "Z")
+# ws: 	 numeric or function. Length or diameter of the moving window 
+# used to detect the local maxima in the units of the input data 
+# (usually meters). If it is numeric a fixed window size is used. 
+# If it is a function, the function determines the size of the window 
+# at any given location on the canopy. By default function takes the 
+# height of a given pixel or point as its only argument and return the
+# desired size of the search window when centered on that pixel/point. 
+# This can be controled with the 'ws_args' parameter.
+
+# hmin: numeric. Minimum height of a tree. Threshold below which a 
+# pixel or a point cannot be a local maxima. Default is 2.
+
+# shape: character. Shape of the moving window used to find the local 
+# maxima. Can be "square" or "circular".
+
+# ws_args: list. Named list of argument for the function 'ws' if 'ws'
+# is a function.
+
+ttops <- locate_trees(las, lmf(ws = 20)) 
+plot(chm, col = height.colors(50))
+plot(sf::st_geometry(ttops), add = TRUE, pch = 3)
+
+#png("outputs/ttops_11_01_ws20.png", width = 15, height = 15, units = "cm", res #= 600)
+
+#plot(chm, col = height.colors(50))
+#plot(sf::st_geometry(ttops), add = TRUE, pch = 3)
+
+#dev.off()
+
+# plot the point cloud
+# It's somehow added on a tree that's 60m tall in the middle of the plot
+# that has no data to support it
+
+offsets <- plot(las, bg = "white", size = 3)
+add_treetops3d(offsets, ttops)
+# num,ber of trees detected is related to the ws value:
+
+ttops_3m <- locate_trees(las, lmf(ws = 3))
+ttops_11m <- locate_trees(las, lmf(ws = 11))
+
+par(mfrow=c(1,2))
+plot(chm, col = height.colors(50))
+plot(sf::st_geometry(ttops_3m), add = TRUE, pch = 3)
+plot(chm, col = height.colors(50))
+plot(sf::st_geometry(ttops_11m), add = TRUE, pch = 3)
+
+# extract the coordinates of the trees and apply the shift to display the lines
+# in the rendering coordinate system
+
+x <- sf::st_coordinates(ttops)[,1] - offsets[1] 
+y <- sf::st_coordinates(ttops)[,2] - offsets[2] 
+z <- ttops$Z
+
+
+# Build a GL_LINES matrix for fast rendering
+x <- rep(x, each = 2)
+y <- rep(y, each = 2)
+tmp <- numeric(2*length(z)) 
+tmp[2*1:length(z)] <- z
+z <- tmp
+M <- cbind(x,y,z)
+
+# Display lines
+rgl::segments3d(M, col = "black", lwd = 2)
+
+
+# individual segmentation:
+
+algo <- dalponte2016(chm, ttops)
+t <- segment_trees(las, algo) # segment point cloud
+plot(t, bg = "white", size = 4, color = "treeID") # visualize trees
+# dont feel that confident about this1
+
+# extrtact crowns:
+
+crowns <- crown_metrics(t, func = .stdtreemetrics, geom = "convex")
+plot(crowns["convhull_area"], main = "Crown area (convex hull)")
+
+```

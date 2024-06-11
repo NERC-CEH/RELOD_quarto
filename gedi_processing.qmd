@@ -1,0 +1,525 @@
+# GEDI data processing
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval= FALSE)
+```
+
+This R script details how to download and pre-process GEDI data to get it into a useable form.
+
+## How to access GEDI:
+
+GEDI data can be downloaded from Nasa's Earthdata platform directly: <https://search.earthdata.nasa.gov/search>
+
+On this platform you can specify the coordinates of your site of interest and download the GEDI passes that cover this particular region.
+
+For GEDI 1B and 2B, when using NASA earthdata directly, you can crop the beam path to only download the section of interest, which saves a lot of space. However this functionality doesn't seem to (yet) be available for the more recently released 4A datasets. In this code below, I have separately downloaded 1B and 2B data from the Earthdata platform, zipped the file including all beam passes and uploaded this to the minio platform. The first step is then to unzip these files.
+
+GEDI quick guide for how to download data directly from the Earthdata portal: <https://lpdaac.usgs.gov/documents/635/GEDI_Quick_Guide.pdf>
+
+You can also download GEDI data through R using *rGEDI* (see below for explanation) and specifying the coordinates of your bounding box. However from my experience this will download the entire beam pass rather than the cropped region of interest, which generates very large files. I reccomend downloading data from earth data yourself using the crop function rather than using the download method included in rGEDI as this downloads the entire files which are huge (!) rather than just the cropped area.
+
+### h5 file structures:
+
+GEDI data is downloaded in h5 file types. This is a Hierarchical data format that allows the storage of multidimensional arrays of data. As we are dealing with a separate dataset for every shot from GEDI, this makes it far easier to store such a large amount of data, however it is a little complicated to interact with if you are not familiar with this data format.
+
+### Packages for GEDI in R:
+
+GEDI 1B, 2A and 2B data can be processed in R using *rGEDI*. The H5 structure of the GEDI data mean that they are not always simple to access and navigate through. The *rGEDI* package was developed to process Level 1 and 2 data (https://github.com/carlos-alberto-silva/rGEDI). This package can be useful for an introduction to how to navigate through the files and what you can access from them. However, this package is not flexible: it fails to open and navigate through the h5 files if you have a GEDI beam that had one or more lasers turned off during the flight. The *GEDI4R* package (<https://github.com/VangiElia/GEDI4R>, <https://link.springer.com/article/10.1007/s12145-022-00915-3>), complements the *rGEDI* package, has been developed to process level 4A data.
+
+The code below assumes you have already downloaded the GEDI data for your region of interest from the Earthdata platform. In this example, we use the region of the Knepp estate in Sussex as an example. The code goes through the process of accessing the h5 datasets, pulling out the data for the region of interest and converting this into a more readily usable dataframe and shapefile format.
+
+```{r}
+#To install gedi download and processing packages:
+# devtools::install_git("https://github.com/carlos-alberto-silva/rGEDI", dependencies = TRUE)
+# devtools::install_github("VangiElia/GEDI4R")
+
+library(rGEDI)
+library(hdf5r)
+library(terra)
+library(lubridate)
+library(GEDI4R)
+#library(rgdal)
+library(raster)
+library(hdf5r)
+library(here)
+rm(list=ls())
+
+# bounding box of region
+# SW : 50.95,-0.399
+# NE : 50.99,-0.354
+
+
+# get shapefile for project area:
+
+s <- vect(here("data-raw", "knepp_mask", "knepp_mask.shp"))
+s <- terra::project(s, "EPSG: 4326")
+s <- fillHoles(s)
+
+```
+
+## Identifying files for download
+
+This can also be done on the Earthdata Nasa portal, which is better. It actually can crop to an area of interest. Here is the code of how it should be done using the rGEDI package, which I couldn't get to work.
+
+GEDI naming conventions:
+
+GEDI01_B_2019110110221_O01997_03_T03335_02_005_01_V002.h5 indicates:
+
+GEDI01_B = Product Short Name
+
+2019110 = Julian Date of Acquisition in YYYYDDD
+
+110221 = Hours, Minutes, and Seconds of Acquisition (HHMMSS)
+
+O01997 = O = Orbit, 01997 = Orbit Number
+
+03 = Sub-Orbit Granule Number
+
+T03335 = T = Track, 033335 = Track Number
+
+02 = Positioning and Pointing Determination System (PPDS) type (00 is predict, 01 rapid, 02 and higher is final)
+
+005 = PGEVersion = SDPS Release Number
+
+01 = Granule Production Version
+
+V002 = Version Number
+
+.h5 = Data Format
+
+## Using gedi data in datalabs:
+
+Need to put gedi data int the minio data store and then unzip gedi data downloaded from earth data:
+
+```{r}
+
+##############################
+# I cant get this rGEDI code to download just beams that fall within the bounding box area to work:
+
+# Study area boundary box coordinates
+
+#lr_lon <- ext(s)$xmin 
+#lr_lat <- ext(s)$ymin
+#ul_lon <- ext(s)$xmax
+#ul_lat <- ext(s)$ymax
+
+# Specifying the date range
+#daterange=c("2021-01-01","2022-07-22")
+
+# Get path to GEDI data
+#gLevel1B<-gedifinder(product="GEDI01_B",ul_lat, ul_lon, lr_lat, lr_lon,version="002",daterange=daterange)
+#gLevel2A<-gedifinder(product="GEDI02_A",ul_lat, ul_lon, lr_lat, lr_lon,version="002",daterange=daterange)
+#gLevel2B<-gedifinder(product="GEDI02_B",ul_lat, ul_lon, lr_lat, lr_lon,version="002",daterange=daterange)
+
+# returns thousands of beams which can't be right
+
+```
+
+## Level 1B data:
+
+Level 1B GEDI data is the rawest form of data you can download. This includes the raw waveform data. This data level is good to download if you want to process it yourself and derive metrics that are not available in the more processed forms (Level2,3, or 4).
+
+User guide: https://lpdaac.usgs.gov/documents/590/GEDIL01_User_Guide_V1.pdf
+
+#Steps to access level 1B GEDI h5 files, extract required information and save into a dataframe / shapefile are laid out below:
+
+#zipF\<- file.choose("data-raw/knepp_mask.zip") \# lets you choose a file and save its file path in R (at least for windows) #outDir\<-"data-raw/gedi/rewild4a" \# Define the folder where the zip file should be unzipped to #unzip(zipF,exdir=outDir)
+
+```{r}
+
+####
+# unzip GEDI 1B: this stage is only useful if you are working on datalabs and have had to add your GEDI data to the minio data platform as a zip file.
+# zipF<- file.choose("path") # lets you choose a file and save its file path in R (at least for windows)
+# outDir<-"set the path" # Define the folder where the zip file should be unzipped to 
+# unzip(zipF,exdir=outDir) 
+
+beams <- c("BEAM0000", "BEAM0101", "BEAM1000", "BEAM0010", 
+           "BEAM0011", "BEAM0110", "BEAM0001", "BEAM1011")
+
+f_1b <- list.files(here("data-raw", "gedi", "rewild1b"))
+
+# navigate through the h5 files using the following terminology:
+#gedi_file <- list.files(here("data-raw", "gedi" "rewild1b_01",f_1b[i]))
+#file <- paste0(f_1b[i], "/",gedi_file)
+
+#gedilevel1b <- readLevel1B(level1Bpath = here("data-raw/gedi/knepp1b_01", file))
+#level1b <- gedilevel1b@h5
+#level1b[[paste0("BEAM0010/stale_return_flag")]][]
+
+
+## this is a function to extract variables of interest from the h5 file. It is 
+# adapted from the rGEDI package, which doesn't take into account that some 
+# beams will not include data, and errors when you direclty apply it. 
+# Here i have adapted this function to extract variables of interest, stale return
+# flag, elevatin_bin0, elevation_lastbin etc.
+
+getLevel1BWF <- function (level1b, v_sn) {
+  waveform <- data.frame(matrix(ncol = 5, nrow= 0))
+  colnames(waveform) <- c("rxwaveform", "elevation", "shot_number", "beam", "relwave")
+  level1b <- level1b@h5
+  for(j in 1:length(beams)){
+    i <- beams[j]
+    
+    if(length(gedilevel1b@h5[[i]]$names)>1) {
+      shot_number_i <- level1b[[paste0(i, "/shot_number")]][]
+      for(l in 1:length(shot_number_i)){
+        shot_number = shot_number_i[l]
+        
+        shot_number_id <- which(shot_number_i[] == shot_number)
+        stale_return_flag <- level1b[[paste0(i, "/stale_return_flag")]][]
+        elevation_bin0 <- level1b[[paste0(i, "/geolocation/elevation_bin0")]][]
+        elevation_lastbin <- level1b[[paste0(i, "/geolocation/elevation_lastbin")]][]
+        rx_sample_count <- level1b[[paste0(i, "/rx_sample_count")]][]
+        rx_sample_start_index <- level1b[[paste0(i, "/rx_sample_start_index")]][]
+        rx_sample_start_index_n <- rx_sample_start_index - min(rx_sample_start_index) + 1
+        rxwaveform_i <- level1b[[paste0(i,"/rxwaveform")]][rx_sample_start_index_n[shot_number_id]:(rx_sample_start_index_n[shot_number_id] +  rx_sample_count[shot_number_id] - 1)]
+        rxwaveform_inorm <- (rxwaveform_i - min(rxwaveform_i))/(max(rxwaveform_i) - 
+                                                                  min(rxwaveform_i)) * 100
+        max <- max(rxwaveform_i)
+        elevation_bin0_i <- elevation_bin0[shot_number_id]
+        elevation_lastbin_i <- elevation_lastbin[shot_number_id]
+        z = rev(seq(elevation_lastbin_i, elevation_bin0_i, (elevation_bin0_i - elevation_lastbin_i)/rx_sample_count[shot_number_id]))[-1]
+        waveform <- rbind(waveform, data.table::data.table(rxwaveform = rxwaveform_i, 
+                                                           elevation = z, 
+                                                           shot_number = shot_number, 
+                                                           beam = i,
+                                                           stale_return_flag = stale_return_flag,
+                                                           relwave = rxwaveform_i/ max))
+        
+      }}}
+  
+  return(waveform) 
+}
+
+# extracting 1B data from h5 files:
+
+# create lists
+l_1b_spdf <- list() # for a list of shapefiles
+l_1b_df <- list() # for a list of dataframes
+l_1b_wf <- list() # for the full waveform data
+
+# loop through each h5 file, extracting information and adding into the list of 
+# shapefiles, dataframes and waveforms:
+
+for(i in 1: length(f_1b)){
+  
+  gedi_file <- list.files(here("data-raw", "gedi", "rewild1b", f_1b[i]))
+  file <- paste0(f_1b[i], "/",gedi_file)
+  
+  gedilevel1b <- readLevel1B(level1Bpath = here("data-raw", "gedi", "rewild1b", file))
+  
+  level1b <-  gedilevel1b@h5 
+  
+  wf <- getLevel1BWF(gedilevel1b)
+  
+  level1bGeo <- getLevel1BGeo(level1b=gedilevel1b,
+                              select=c("elevation_bin0",
+                                       "elevation_lastbin"))
+  level1bGeo$shot_number <- paste0(level1bGeo$shot_number)
+  
+  #print(level1bGeo)
+  
+  # extract date info
+  yr <- as.numeric(substring(gedi_file, first=20, last=23))
+  yday <- as.numeric(substring(gedi_file, first=24, last=26))
+  hh <- substring(gedi_file, first=27, last=28)
+  mm <- substring(gedi_file, first=29, last=30)
+  ss <- substring(gedi_file, first=31, last=32)
+  date_full <- as.POSIXct(paste0(as.Date(yday, origin = paste0(yr,"-01-01")), 
+                                 " ",hh, ":", mm, ":", ss ), format="%Y-%m-%d %H:%M:%S")
+  
+  level1bGeo$date <- as.character(date_full)
+  
+  date <- as.character(paste0(strftime(date_full, "%d"),"_",
+                              strftime(date_full, "%m"),"_",  yr,"_", hh, "_", mm, "_", ss))
+  
+  # Converting level1bGeo as data.table to SpatialPointsDataFrame
+  level1bGeo_spdf <- vect(level1bGeo, geom=c("longitude_bin0", "latitude_bin0"))
+  crs(level1bGeo_spdf) <-  "EPSG:4326"
+  
+  #terra::writeVector(level1bGeo_spdf,paste0("bethtest/data/gedi_1b/GEDI_1B_", date))
+  
+  l_1b_spdf[[i]] <- level1bGeo_spdf
+  
+  l_1b_df[[i]] <- level1bGeo
+  
+  l_1b_wf[[i]] <- wf
+  
+}
+
+spdf_1b <- do.call(rbind, l_1b_spdf)
+df_1b <- do.call(rbind, l_1b_df)
+wf_1b <- do.call(rbind, l_1b_wf)
+wf_1b$shot_number <- as.factor(wf_1b$shot_number)
+
+writeVector(spdf_1b,here("data-output", "gedi", "g1b_full.shp"), overwrite = TRUE)
+write.csv(df_1b,here("data-output", "gedi", "g1b_shot_dat.csv"))
+write.csv(wf_1b,here("data-output", "gedi", "g1b_wave_dat.csv"))
+
+```
+
+## Level 2A
+
+The GEDI02_A data product contains 156 layers for each of the eight beams, including ground elevation, canopy top height, relative return energy metrics (e.g., canopy vertical structure), and many other interpreted products from the return waveforms.
+
+Additional information for the layers can be found in the GEDI Level 2A Dictionary: https://lpdaac.usgs.gov/products/gedi02_av002/
+
+The code below lays out how to access these different metrics from the h5 files, extract them and compile them together for an area of interest.
+
+```{r}
+
+f_2a <- c(list.files(here("data-raw", "gedi","rewild2a")))
+
+# dont want read mes
+f_2a <- f_2a[-grep("README", f_2a)]
+f_2a <- paste0("data-raw/gedi/rewild2a/", f_2a, "/")
+
+l_2a_sp <- list()
+l_2a_df <- list()
+
+for(i in 1: length(f_2a)){
+  gedi_file <- list.files(f_2a[i])
+  gedilevel2a <- readLevel2A(level2Apath = paste0(f_2a[i], gedi_file))
+  
+  level2AM <- getLevel2AM(gedilevel2a)
+  #head(level2AM[,c("beam","shot_number","elev_highestreturn","elev_lowestmode","rh100")])
+  
+  # Converting shot_number as "integer64" to "character"
+  level2AM$shot_number <- paste0(level2AM$shot_number)
+  
+  #compiling date
+  yr <- as.numeric(substring(gedi_file, first=20, last=23))
+  yday <- as.numeric(substring(gedi_file, first=24, last=26))
+  hh <- substring(gedi_file, first=27, last=28)
+  mm <- substring(gedi_file, first=29, last=30)
+  ss <- substring(gedi_file, first=31, last=32)
+  date_full <- as.POSIXct(paste0(as.Date(yday, origin = paste0(yr,"-01-01")), " ",hh, ":", mm, ":", ss ), format="%Y-%m-%d %H:%M:%S")
+  
+  level2AM$date <- as.character(date_full)
+  
+  date <- as.character(paste0(strftime(date_full, "%d"),"_", strftime(date_full, "%m"),"_",  yr,"_", hh, "_", mm, "_", ss))
+  
+  # Converting Elevation and Height Metrics as data.table to SpatialPointsDataFrame
+  level2AM_spdf <- vect(level2AM, geom=c("lon_lowestmode", "lat_lowestmode"))
+  
+  # Exporting Elevation and Height Metrics as ESRI Shapefile
+  #terra::writeVector(level2AM_spdf,paste0("bethtest/data/gedi_2a/GEDI_2A_", substring(f_2a[1], first = 20, last = 21), "_", date))
+  
+  l_2a_sp[[i]] <- level2AM_spdf 
+  l_2a_df[[i]] <- level2AM 
+}
+
+sp_2a <- do.call(rbind, l_2a_sp)
+
+df_2a <- do.call(rbind, l_2a_df)
+
+terra::writeVector(sp_2a, here("data-output", "gedi", "g2a_full.shp"), overwrite = TRUE)
+write.csv(df_2a, here("data-output", "gedi", "g2a_full.csv"))
+
+```
+
+## Level 2B:
+
+For 2b you cant use the functions defined in rGEDI directly: something about not all of the beams being detected in every pass. Have 5 - 8 beams for each one S this produces a data frame that is pretty much the length of the number of shots from the study area
+
+```{r}
+f_2b <- paste0("data-raw/gedi/rewild2b/", 
+               list.files(here("data-raw", "gedi", "rewild2b")))
+
+beams <- c("BEAM0000", "BEAM0101", "BEAM1000", "BEAM0010", 
+           "BEAM0011", "BEAM0110", "BEAM0001", "BEAM1011")
+
+
+for(i in 1:length(f_2b)){
+  
+  file <- paste0(f_2b[i],"/", list.files(f_2b[i]))
+  gedi2 <- readLevel2B(level2Bpath = file)
+  
+  for(j in 1:length(beams)){
+    
+    b <- beams[j]
+    if(length(gedi2@h5[[b]]$names)>1){
+      
+      level2b_i <- gedi2@h5[[b]]
+      
+      # this is pulling out what happens in getLevel2BPAIProfile and
+      # getLevel2BPAVDProfile
+      
+      m <- data.table::data.table(beam <- rep(b, length(level2b_i[["shot_number"]][])), 
+                                  shot_number = level2b_i[["shot_number"]][], 
+                                  algorithmrun_flag = level2b_i[["algorithmrun_flag"]][], 
+                                  l2b_quality_flag = level2b_i[["l2b_quality_flag"]][], 
+                                  delta_time = level2b_i[["geolocation/delta_time"]][], 
+                                  lat_lowestmode = level2b_i[["geolocation/lat_lowestmode"]][], 
+                                  lon_lowestmode = level2b_i[["geolocation/lon_lowestmode"]][], 
+                                  elev_highestreturn = level2b_i[["geolocation/elev_highestreturn"]][], 
+                                  elev_lowestmode = level2b_i[["geolocation/elev_lowestmode"]][], 
+                                  height_lastbin = level2b_i[["geolocation/height_lastbin"]][], 
+                                  height_bin0 = level2b_i[["geolocation/height_bin0"]][],
+                                  ## DTM = level2b_i[["digital_elevaion_model"]][], # new
+                                  ##  srtm = level2b_i[["digital_elevation_model_srtm"]] # new
+                                  cover = level2b_i[["cover"]][],
+                                  pai = level2b_i[["pai"]][],
+                                  omega = level2b_i[["omega"]][],
+                                  fhd_normal = level2b_i[["fhd_normal"]][],
+                                  pai_z = t(level2b_i[["pai_z"]][, 1:level2b_i[["pai_z"]]$dims[2]]),
+                                  pavd_z = t(level2b_i[["pavd_z"]][, 1:level2b_i[["pavd_z"]]$dims[2]]))
+      
+      colnames(m) <- c("beam", "shot_number", "algorithmrun_flag", 
+                       "l2b_quality_flag", "delta_time", "lat_lowestmode", 
+                       "lon_lowestmode", "elev_highestreturn", "elev_lowestmode", 
+                       "height_lastbin", "height_bin0", "cover", "pai", "omega", "fhd_normal",
+                       paste0("pai_z", seq(0, 30 * 5, 5)[-31], 
+                              "_", seq(5, 30 * 5, 5), "m"),
+                       paste0("pavd_z", seq(0, 30 * 5, 5)[-31], 
+                              "_", seq(5, 30 * 5, 5), "m")) 
+      
+      if(i ==1){
+        df_BVPM <- m
+      }else{
+        df_BVPM <- rbind(df_BVPM, m)
+        
+      }
+    }
+    
+  }
+  
+}
+
+df_BVPM$shot_number <- as.character(df_BVPM$shot_number)
+df_BVPM_s <- df_BVPM[df_BVPM$l2b_quality_flag ==1,]
+
+m <- vect(df_BVPM, geom=c("lon_lowestmode", "lat_lowestmode"))
+plot(m)
+
+ms <- vect(df_BVPM_s, geom=c("lon_lowestmode", "lat_lowestmode"))
+plot(ms)
+
+# R has a 10 character limit for colnames in shapefiles so saving as df too. 
+
+write.csv(df_BVPM_s, here("data-output", "gedi", "g2b_QC.csv"))
+writeVector(m, here("data-output", "gedi", "g2b_full.shp"), overwrite = TRUE)
+writeVector(ms, here("data-output", "gedi", "g2b_QC.shp"), overwrite = TRUE)
+
+
+```
+
+## Level 4:
+
+We aren't going to explore the level 3 data here as that is just gridded 1km products from the 2b data. The level 4 data is the most highly processed data products, including aboveground biomass estimates.
+
+```{r, eval = FALSE}
+
+#outdir <- here("data-raw", "gedi", "knepp4a")
+##Get the list of all files available for the study area in the period selected,
+#using just_path = T
+#lr_lon <- ext(s)$xmin 
+#lr_lat <- ext(s)$ymin
+#ul_lon <- ext(s)$xmax
+#ul_lat <- ext(s)$ymax
+
+#Get the list of all files available for the study area in the period selected,
+#using just_path = T
+#file_path <- l4_download(
+#  ul_lat,
+#  lr_lat,
+#  ul_lon,
+#  lr_lon,
+#  outdir = outdir,
+#  from = "2020-01-01",
+#  to = "2022-07-20",
+#  just_path = T
+#)
+
+# this is very time consuming
+#download files
+#file_download <- l4_download(
+#  ul_lat,
+#  lr_lat,
+#  ul_lon,
+#  lr_lon,
+#  ncore = parallel::detectCores()-1,
+#  outdir = outdir,
+#  from = "2020-01-01",
+#  to = "2022-07-20",
+#  just_path = F
+#  #subset=1:4
+#)
+
+```
+
+```{r}
+#### reading:
+l <- list.files(here("data-raw", "gedi", "rewild4a"))
+l <- paste0("data-raw/gedi/rewild4a/", l)
+
+#list all dataset in h5 file
+dataname <- l4_getmulti(l[[1]],just_colnames = T)
+head(dataname, 183) # has 183 entries
+
+#read all footprint and merge them together.
+#!! this will use all CPUs available unless you specify otherwise!!
+
+#gediL4_path <- l4_getmulti(l,merge=T, ncore =3)
+
+#select other columns to add to the default output.
+#if columns are already present in the default output they will be dropped
+col <-
+  c("land_cover_data/leaf_off_flag",
+    "agbd_pi_lower",
+    "agbd_pi_upper",
+    "lat_lowestmode",
+    "lon_lowestmode",
+    "land_cover_data/landsat_treecover",        
+    "land_cover_data/landsat_water_persistence",
+    "land_cover_data/leaf_off_doy", 
+    "land_cover_data/leaf_on_cycle",            
+    "land_cover_data/leaf_on_doy",
+    "land_cover_data/pft_class",                
+    "land_cover_data/region_class",
+    "land_cover_data/shot_number",              
+    "land_cover_data/urban_focal_window_size" ,
+    "land_cover_data/urban_proportion",  
+    "agbd"#this will be dropped as it is already included by default in the output.
+  )
+#get level 4 data with the user defined column binded and with the source path of each observation
+#with source=T a column with the source path for each observation will be added
+gediL4 <- l4_getmulti(l,add_col = col,source=T, merge = T, ncore= 2)
+
+### CLIPPING:
+
+# Clipping using shapefile
+
+clipped <- l4_clip(gediL4,clip=s,usegeometry = F)
+
+# save as csv
+write.csv(clipped, here("data-output", "gedi", "4a_gedi_knepp.csv"))
+
+# saving output
+t <- vect(clipped, geom=c("lon_lowestmode","lat_lowestmode"))
+
+writeVector(t, here("data-output", "gedi", "GEDI_4A_all.shp"))
+```
+
+Level 4b data is the 1km gridded estimates, this is a product extrapolated from the beam-level data. The data is provided in a standard .tif file so it is easier to process than the other level GEDI products.
+
+For our example of the Knepp estate, this data isn't particuarly meaningful.
+
+```{r, eval =  FALSE}
+
+###############################################################################
+### 4B: this is gridded to the 1km square so it doesn't show much in this particular example 
+
+#list.files(here("data", "gedi", "gedi_4b", "GEDI_L4B_Gridded_Biomass_2017", "data")
+#           g4b <- rast(here("data", "gedi","gedi_4b", "GEDI_L4B_Gridded_Biomass_2017", "data", #"GEDI04_B_MW019MW138_02_002_05_R01000M_MU.tif")
+
+#                      s <- vect("data/gedi/knepp_outline.shp")
+#                       s <- terra::project(s, "epsg:4326")#  "+proj=longlat +datum=WGS84"
+#                       
+#                       g4b <- project(g4b, "EPSG:4326") # currently as lat long
+#                       subset_4b <- crop(g4b, ext(s))
+#                       plot(subset_4b)
+#                       
+#                       terra::writeRaster(subset_4b, here("data", "gedi" , "gedi_4b", "GEDI_4b_knepp.tif")
+
+```
